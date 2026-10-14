@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2026 in the Air</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: departures-board header, then route map (left) beside a boarding-pass flight log (right); stacks on phones. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --land: #e2e7ee;
+  --ocean: #eef1f5;
+  --ink: #17223a;
+  --muted: #5d6a82;
+  --line: #cfd6e1;
+  --flown: #2b4c8c;
+  --upcoming: #c9761a;
+  --upcoming-text: #9a5a10;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1524; --surface: #151f33; --land: #1a253b; --ocean: #0e1524;
+    --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
+    --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1524; --surface: #151f33; --land: #1a253b; --ocean: #0e1524;
+  --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
+  --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 20px; display: grid; gap: 24px; }
+
+header { display: grid; gap: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 8vw, 84px); line-height: .9; margin: 4px 0 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--upcoming-text); }
+
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cell { background: var(--surface); padding: 12px 16px; display: grid; gap: 2px; min-width: 0; }
+.cell .k { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cell .v { font-family: var(--display); font-weight: 600; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.cell .s { font-size: 12px; color: var(--muted); }
+.cell.next .v { color: var(--upcoming-text); }
+
+.months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.month { display: grid; gap: 6px; justify-items: center; padding: 8px 0 6px; border-top: 2px solid var(--line); min-width: 0; }
+.month.now { border-top-color: var(--upcoming); }
+.month .m { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.month.now .m { color: var(--upcoming-text); font-weight: 500; }
+.month .dots { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--flown); }
+.dot.up { background: transparent; border: 2px solid var(--upcoming); }
+
+main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+
+.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 860px) { .mapcard { position: static; } }
+svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--flown); }
+.legend i.up { border-top: 2px dashed var(--upcoming); }
+
+.arc { fill: none; stroke-width: 2; transition: opacity .2s, stroke-width .2s; }
+.arc.flown { stroke: var(--flown); opacity: .55; }
+.arc.up { stroke: var(--upcoming); stroke-dasharray: 6 5; opacity: .9; }
+svg.focus .arc { opacity: .12; }
+svg.focus .arc.on { opacity: 1; stroke-width: 3.5; }
+
+.log { display: grid; gap: 10px; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.toolbar h2 { font-family: var(--display); font-weight: 600; font-size: 26px; text-transform: uppercase; margin: 0; letter-spacing: .02em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.seg button { font: 500 12px var(--body); color: var(--muted); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible, .pass:focus-visible { outline: 2px solid var(--upcoming); outline-offset: 2px; }
+
+.pass { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; position: relative; cursor: default; transition: border-color .15s, transform .15s; }
+.pass::before, .pass::after { content: ""; position: absolute; left: 78px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+.pass::before { top: -7px; } .pass::after { bottom: -7px; }
+.pass.on { border-color: var(--ink); }
+.pass .date { font-family: var(--mono); text-align: center; line-height: 1.1; border-right: 1px dashed var(--line); padding-right: 12px; }
+.pass .date b { display: block; font-family: var(--display); font-weight: 800; font-size: 28px; }
+.pass .date small { font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+.route { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .03em; line-height: 1; display: flex; align-items: center; gap: 8px; }
+.route svg { width: 18px; height: 18px; flex: none; }
+.meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.meta code { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.note { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.badge { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.flown { color: var(--flown); border: 1px solid currentColor; }
+.badge.up { color: var(--upcoming-text); background: color-mix(in srgb, var(--upcoming) 16%, transparent); }
+
+footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
+
+@media (max-width: 480px) {
+  .pass { grid-template-columns: 52px minmax(0, 1fr); }
+  .pass::before, .pass::after { left: 64px; }
+  .pass .badge { grid-column: 2; justify-self: start; }
+  .route { font-size: 22px; }
+  .month .m { font-size: 9px; letter-spacing: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Ting-yun Wu · Flight log</div>
+      <h1>2026 <span>in the air</span></h1>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="months" id="months" aria-label="Flights by month"></div>
+  </header>
+
+  <main>
+    <section class="mapcard" aria-label="Route map">
+      <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of 2026 flight routes between Seattle, San Francisco, San Jose and Dallas–Fort Worth"></svg>
+      <div class="legend">
+        <span><i></i>Flown</span>
+        <span><i class="up"></i>Upcoming</span>
+        <span>Dot size = times through that airport</span>
+      </div>
+    </section>
+
+    <section class="log">
+      <div class="toolbar">
+        <h2>Flights</h2>
+        <div class="seg" role="group" aria-label="Filter flights">
+          <button id="f-all" data-f="all" aria-pressed="true">All</button>
+          <button id="f-flown" data-f="flown" aria-pressed="false">Flown</button>
+          <button id="f-up" data-f="up" aria-pressed="false">Upcoming</button>
+        </div>
+      </div>
+      <div id="list" class="log"></div>
+    </section>
+  </main>
+
+  <footer>Compiled from airline and Chase Travel confirmation emails. The Jun 23 flight was rebooked: the original United SEA → SFO ticket became Alaska SEA → SJC. Distances are great-circle miles between airports.</footer>
+</div>
+
+<script>
+const AIRPORTS = {
+  SEA: { city: "Seattle", lat: 47.449, lon: -122.309 },
+  SFO: { city: "San Francisco", lat: 37.619, lon: -122.375 },
+  SJC: { city: "San José", lat: 37.363, lon: -121.929 },
+  DFW: { city: "Dallas–Fort Worth", lat: 32.899, lon: -97.040 },
+};
+const FLIGHTS = [
+  { d: "2026-01-02", from: "SEA", to: "SJC", air: "Southwest", no: "WN 4693" },
+  { d: "2026-06-12", from: "SFO", to: "SEA", air: "United", no: "UA 5579", t: "10:59 PM → 1:29 AM" },
+  { d: "2026-06-23", from: "SEA", to: "SJC", air: "Alaska", no: "AS 319", t: "3:42 PM → 5:53 PM", note: "Rebooked from United SEA → SFO" },
+  { d: "2026-06-30", from: "SFO", to: "SEA", air: "United", no: "UA 1389", t: "10:59 PM → 1:13 AM" },
+  { d: "2026-07-07", from: "SEA", to: "SJC", air: "Delta", no: "DL 3736" },
+  { d: "2026-08-14", from: "SFO", to: "DFW", air: "Frontier", no: "F9 2376" },
+  { d: "2026-08-17", from: "DFW", to: "SFO", air: "American", no: "AA 1949", t: "7:10 AM → 8:50 AM" },
+  { d: "2026-09-05", from: "SJC", to: "SEA", air: "Delta" },
+  { d: "2026-09-10", from: "SEA", to: "SJC", air: "Delta" },
+  { d: "2026-11-14", from: "SFO", to: "SEA", air: "Alaska", no: "AS 591", t: "6:48 PM → 9:03 PM" },
+  { d: "2026-11-16", from: "SEA", to: "SFO", air: "United", no: "UA 499", t: "7:00 AM → 9:19 AM" },
+  { d: "2026-11-23", from: "SJC", to: "SEA", air: "Southwest", no: "WN 2150", t: "6:00 AM → 8:30 AM" },
+  { d: "2026-12-01", from: "SEA", to: "SJC", air: "Delta", no: "DL 3736", t: "8:30 AM → 10:53 AM" },
+  { d: "2026-12-19", from: "SJC", to: "SEA", air: "Southwest", no: "WN 3914", t: "9:45 PM → 12:05 AM" },
+];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = f.date >= today; f.mi = miles(AIRPORTS[f.from], AIRPORTS[f.to]); });
+
+function miles(a, b) {
+  const r = Math.PI / 180, R = 3958.8;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const fmt = n => Math.round(n).toLocaleString("en-US");
+
+/* ---------- board ---------- */
+(function board() {
+  const flown = FLIGHTS.filter(f => !f.up), up = FLIGHTS.filter(f => f.up);
+  const total = FLIGHTS.reduce((s, f) => s + f.mi, 0);
+  const airlines = new Set(FLIGHTS.map(f => f.air)).size;
+  const next = up[0];
+  let nextHTML;
+  if (next) {
+    const days = Math.round((next.date - today) / 864e5);
+    nextHTML = `<div class="k">Next departure</div><div class="v">${days === 0 ? "Today" : days + (days === 1 ? " day" : " days")}</div><div class="s">${MONTHS[next.date.getMonth()]} ${next.date.getDate()} · ${next.from} → ${next.to}</div>`;
+  } else {
+    nextHTML = `<div class="k">Next departure</div><div class="v">—</div><div class="s">Every 2026 flight is flown</div>`;
+  }
+  document.getElementById("board").innerHTML = `
+    <div class="cell"><div class="k">Flights</div><div class="v">${FLIGHTS.length}</div><div class="s">${flown.length} flown · ${up.length} upcoming</div></div>
+    <div class="cell"><div class="k">Miles</div><div class="v">${fmt(total)}</div><div class="s">${fmt(flown.reduce((s, f) => s + f.mi, 0))} so far</div></div>
+    <div class="cell"><div class="k">Airlines</div><div class="v">${airlines}</div><div class="s">Delta the most (${FLIGHTS.filter(f => f.air === "Delta").length})</div></div>
+    <div class="cell"><div class="k">Airports</div><div class="v">${Object.keys(AIRPORTS).length}</div><div class="s">SEA on ${FLIGHTS.filter(f => f.from === "SEA" || f.to === "SEA").length} of ${FLIGHTS.length} flights</div></div>
+    <div class="cell next">${nextHTML}</div>`;
+})();
+
+/* ---------- month strip ---------- */
+(function months() {
+  const el = document.getElementById("months");
+  const nowM = today.getFullYear() === 2026 ? today.getMonth() : -1;
+  el.innerHTML = MONTHS.map((m, i) => {
+    const dots = FLIGHTS.filter(f => f.date.getMonth() === i).map(f => `<span class="dot${f.up ? " up" : ""}" title="${m} ${f.date.getDate()}: ${f.from} → ${f.to}"></span>`).join("");
+    return `<div class="month${i === nowM ? " now" : ""}"><span class="m">${m.toUpperCase()}</span><span class="dots">${dots}</span></div>`;
+  }).join("");
+})();
+
+/* ---------- map ---------- */
+const S = 36, LON0 = -127, LAT0 = 50.5, KX = Math.cos(40 * Math.PI / 180);
+const P = (lat, lon) => [(lon - LON0) * KX * S, (LAT0 - lat) * S];
+const svg = document.getElementById("map");
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent = svg) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
+
+(function map() {
+  el("rect", { x: 0, y: 0, width: 910, height: 756, fill: "var(--ocean)" });
+  // Simplified Pacific coastline, north to south; land is everything east of it.
+  const coast = [[50.5,-127.6],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[29.5,-115.4]];
+  const pts = coast.map(([la, lo]) => P(la, lo));
+  const d = "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join(" L") + " L910,756 L910,0 Z";
+  el("path", { d, fill: "var(--land)", stroke: "var(--line)", "stroke-width": 1.5 });
+
+  // graticule
+  const g = el("g", { stroke: "var(--line)", "stroke-width": 1, "stroke-dasharray": "2 6", opacity: .8 });
+  for (let lat = 30; lat <= 50; lat += 5) { const y = P(lat, 0)[1]; el("line", { x1: 0, x2: 910, y1: y, y2: y }, g); el("text", { x: 904, y: y - 5, "text-anchor": "end", "font-family": "var(--mono)", "font-size": 11, fill: "var(--muted)", stroke: "none" }, svg).textContent = lat + "°N"; }
+  for (let lon = -125; lon <= -95; lon += 5) { const x = P(0, lon)[0]; el("line", { x1: x, x2: x, y1: 0, y2: 756 }, g); el("text", { x: x + 4, y: 748, "font-family": "var(--mono)", "font-size": 11, fill: "var(--muted)" }).textContent = Math.abs(lon) + "°W"; }
+
+  const ocean = el("text", { x: 0, y: 0, transform: `translate(${P(41, -126.2).join(",")}) rotate(-90)`, "text-anchor": "middle", "font-family": "var(--mono)", "font-size": 13, "letter-spacing": "6", fill: "var(--muted)", opacity: .7 });
+  ocean.textContent = "PACIFIC OCEAN";
+
+  // arrowheads
+  const defs = el("defs", {});
+  [["flown", "var(--flown)"], ["up", "var(--upcoming)"]].forEach(([id, c]) => {
+    const m = el("marker", { id: "ah-" + id, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M0,0 L10,5 L0,10 z", fill: c }, m);
+  });
+
+  // arcs: fan out repeated pairs so each flight stays visible
+  const groups = {};
+  const arcs = el("g", {});
+  FLIGHTS.forEach(f => {
+    const key = [f.from, f.to].sort().join("-");
+    const n = (groups[key] = (groups[key] || 0) + 1) - 1;
+    const [ca, cb] = key.split("-").map(k => AIRPORTS[k]);
+    const A = P(ca.lat, ca.lon), B = P(cb.lat, cb.lon);
+    const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+    const k = 0.10 + 0.075 * n;
+    const nx = -dy / len, ny = dx / len;
+    const C = [(A[0] + B[0]) / 2 + nx * k * len, (A[1] + B[1]) / 2 + ny * k * len];
+    const fromP = P(AIRPORTS[f.from].lat, AIRPORTS[f.from].lon), toP = P(AIRPORTS[f.to].lat, AIRPORTS[f.to].lon);
+    const path = el("path", {
+      d: `M${fromP[0].toFixed(1)},${fromP[1].toFixed(1)} Q${C[0].toFixed(1)},${C[1].toFixed(1)} ${toP[0].toFixed(1)},${toP[1].toFixed(1)}`,
+      class: "arc " + (f.up ? "up" : "flown"), "marker-end": `url(#ah-${f.up ? "up" : "flown"})`, "data-i": f.i,
+    }, arcs);
+    el("title", {}, path).textContent = `${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}`;
+    path.addEventListener("mouseenter", () => focus(f.i));
+    path.addEventListener("mouseleave", () => focus(null));
+  });
+
+  // airports
+  const visits = {};
+  FLIGHTS.forEach(f => { visits[f.from] = (visits[f.from] || 0) + 1; visits[f.to] = (visits[f.to] || 0) + 1; });
+  const LABEL = { SEA: [14, 6, "start"], SFO: [-14, -2, "end"], SJC: [14, 16, "start"], DFW: [-16, -18, "end"] };
+  Object.entries(AIRPORTS).forEach(([code, a]) => {
+    const [x, y] = P(a.lat, a.lon), r = 5 + Math.sqrt(visits[code]) * 2.2;
+    el("circle", { cx: x, cy: y, r: r + 4, fill: "var(--surface)", opacity: .9 });
+    el("circle", { cx: x, cy: y, r, fill: "var(--ink)" });
+    const [ox, oy, anchor] = LABEL[code];
+    const t = el("text", { x: x + ox + (anchor === "start" ? r : -r), y: y + oy, "text-anchor": anchor, fill: "var(--ink)" });
+    const t1 = el("tspan", { "font-family": "var(--display)", "font-weight": 800, "font-size": 26 }, t); t1.textContent = code;
+    const t2 = el("tspan", { x: x + ox + (anchor === "start" ? r : -r), dy: 16, "font-family": "var(--body)", "font-size": 12, fill: "var(--muted)" }, t); t2.textContent = `${a.city} · ${visits[code]}×`;
+  });
+})();
+
+/* ---------- log ---------- */
+const plane = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)"/></svg>`;
+let filter = "all";
+function renderList() {
+  const list = document.getElementById("list");
+  const rows = FLIGHTS.filter(f => filter === "all" || (filter === "up") === f.up);
+  list.innerHTML = rows.map(f => `
+    <article class="pass" tabindex="0" data-i="${f.i}" aria-label="${MONTHS[f.date.getMonth()]} ${f.date.getDate()}, ${AIRPORTS[f.from].city} to ${AIRPORTS[f.to].city}">
+      <div class="date"><small>${MONTHS[f.date.getMonth()].toUpperCase()}</small><b>${f.date.getDate()}</b></div>
+      <div style="min-width:0">
+        <div class="route">${f.from} ${plane} ${f.to}</div>
+        <div class="meta">${f.air}${f.no ? ` · <code>${f.no}</code>` : ""}${f.t ? ` · ${f.t}` : ""} · ${fmt(f.mi)} mi</div>
+        ${f.note ? `<div class="note">${f.note}</div>` : ""}
+      </div>
+      <span class="badge ${f.up ? "up" : "flown"}">${f.up ? "Upcoming" : "Flown"}</span>
+    </article>`).join("") || `<p class="meta">No flights in this view.</p>`;
+  list.querySelectorAll(".pass").forEach(p => {
+    const i = +p.dataset.i;
+    p.addEventListener("mouseenter", () => focus(i));
+    p.addEventListener("mouseleave", () => focus(null));
+    p.addEventListener("focus", () => focus(i));
+    p.addEventListener("blur", () => focus(null));
+  });
+}
+function focus(i) {
+  svg.classList.toggle("focus", i !== null);
+  svg.querySelectorAll(".arc").forEach(a => a.classList.toggle("on", +a.dataset.i === i));
+  document.querySelectorAll(".pass").forEach(p => p.classList.toggle("on", +p.dataset.i === i));
+}
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  try { localStorage.setItem("flight-filter", filter); } catch (e) {}
+  renderList();
+}));
+try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
+renderList();
+</script>
+
+</html>
