@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flight Passport</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=Rubik:wght@700;800;900&family=IBM+Plex+Mono:wght@500&family=Lobster&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="world-countries.js"></script>
+<script src="us-states.js"></script>
+<script src="logos.js"></script>
+<style>
+/* Teal kids-logbook page with doodles; a purple app-style passport card (tabs, plane ticker, real map, airline coins, stats); a stamp collage at the bottom. */
+:root {
+  --teal: #4fb6c8; --teal-dk: #2f8fa1; --navy: #17324a; --card: #2a1659; --card2: #3b1f7a; --lilac: #b9a6ff; --soft: rgba(255,255,255,.66);
+  --water: #a9d6ee; --land: #e9f2dc; --land2: #f6f1df; --border: #ffffff; --pin: #e63946;
+  --kid: "Fredoka", "Arial Rounded MT Bold", sans-serif; --ui: "DM Sans", system-ui, sans-serif; --stamp: "Rubik", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+.pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: radial-gradient(rgba(255,255,255,.14) 2px, transparent 2.5px) 0 0/34px 34px, var(--teal); }
+.title { position: absolute; top: 70px; left: 0; right: 0; text-align: center; color: var(--navy); font-family: var(--kid); }
+.title b { display: block; font-size: 92px; font-weight: 700; line-height: 1; }
+.title span { font-size: 40px; font-weight: 600; }
+.doodle { position: absolute; }
+
+.card { position: absolute; top: 240px; left: 40px; width: 1000px; height: 1130px; background: linear-gradient(180deg, var(--card2), var(--card) 60%); border-radius: 44px; box-shadow: 0 24px 50px rgba(20,30,60,.35); color: #fff; font-family: var(--ui); overflow: hidden; }
+.bar { display: flex; align-items: center; justify-content: space-between; padding: 26px 30px 0; }
+.bar i { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center; font-style: normal; font-size: 26px; color: #fff; }
+.bar b { font-size: 28px; font-weight: 700; }
+.tabs { display: flex; gap: 14px; padding: 22px 30px 0; font-size: 21px; font-weight: 500; color: var(--soft); letter-spacing: .04em; }
+.tabs span { padding: 8px 16px; border-radius: 12px; }
+.tabs .on { background: rgba(255,255,255,.16); color: #fff; }
+.ticker { display: flex; align-items: center; gap: 14px; padding: 20px 30px 0; white-space: nowrap; overflow: hidden; }
+.ticker svg { width: 34px; height: 24px; flex: none; }
+.ticker .code { display: inline-flex; align-items: center; gap: 8px; font: 700 26px var(--ui); color: var(--lilac); flex: none; }
+.ticker .code::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 4px solid currentColor; }
+.mapbox { position: relative; margin: 20px 30px 0; height: 370px; border-radius: 26px; overflow: hidden; background: var(--water); }
+.mapbox svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.coins { display: flex; justify-content: center; gap: 0; padding: 22px 0 0; }
+.coin { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 5px solid var(--card); margin-left: -8px; position: relative; }
+.coin > span { width: 70%; height: 70%; display: block; }
+.coin sup { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: var(--card); font: 700 15px/26px var(--ui); text-align: center; }
+.stats { margin: 22px 30px 0; border-top: 1px solid rgba(255,255,255,.18); padding-top: 22px; }
+.stats h3 { font: 700 30px var(--ui); letter-spacing: .02em; }
+.stats .pp { font: 500 15px var(--ui); color: var(--soft); letter-spacing: .14em; margin-top: 4px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px 20px; margin-top: 20px; }
+.grid small { display: block; font: 500 17px var(--ui); color: var(--soft); letter-spacing: .1em; }
+.grid b { font: 700 60px/1.05 var(--ui); letter-spacing: -.01em; }
+.grid b u { text-decoration: none; font-size: 30px; font-weight: 500; }
+.grid .w2 { grid-column: span 2; }
+.foot { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: repeating-linear-gradient(90deg, rgba(185,166,255,.25) 0 6px, transparent 6px 14px); }
+.note { font: 500 14px var(--ui); color: var(--soft); margin-top: 8px; }
+
+.paper { position: absolute; top: 1395px; left: 40px; width: 1000px; height: 495px; background: #fffdf8; border-radius: 28px; box-shadow: 0 18px 40px rgba(20,30,60,.25); overflow: hidden; }
+.paper svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.paper .lbl { position: absolute; top: 18px; left: 28px; font: 600 26px var(--kid); color: var(--navy); background: #fffdf8; padding: 4px 12px; border-radius: 10px; z-index: 2; }
+</style>
+</head>
+<body>
+<div class="pg" id="pg">
+  <div class="title"><b>Flight Log Book</b><span>2026 · 14 flights</span></div>
+  <div class="card">
+    <div class="bar"><i>✕</i><b>My Flight Passport</b><i>⇪</i></div>
+    <div class="tabs"><span>ALL TIME</span><span class="on">2026</span><span>DEC</span><span>NOV</span><span>SEP</span><span>AUG</span><span>JUL</span><span>JUN</span></div>
+    <div class="ticker" id="ticker"></div>
+    <div class="mapbox"><svg id="map"></svg></div>
+    <div class="coins" id="coins"></div>
+    <div class="stats">
+      <h3>MY FLIGHT PASSPORT</h3><div class="pp">PASSPORT · PASS · PASAPORTE</div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="foot"></div>
+  </div>
+  <div class="paper"><span class="lbl">stamps collected ✦</span><svg id="stamps" viewBox="0 0 1000 495"></svg></div>
+</div>
+<script>
+/* ---------- data (rendered as of Dec 20, 2026: every flight flown) ---------- */
+const AP = { SEA:{lon:-122.309,lat:47.449,city:"SEATTLE"}, SFO:{lon:-122.375,lat:37.619,city:"SAN FRANCISCO"}, SJC:{lon:-121.929,lat:37.363,city:"SAN JOSÉ"}, DFW:{lon:-97.040,lat:32.899,city:"DALLAS"} };
+const AL = {
+  DL:{name:"Delta",c:"#C8102E",bg:"#C8102E"}, UA:{name:"United",c:"#0033A0",bg:"#0033A0"},
+  WN:{name:"Southwest",c:"#304CB2",bg:"linear-gradient(#304CB2 0 62%, #FFBF27 62% 80%, #C60C30 80%)"},
+  AS:{name:"Alaska",c:"#01426A",bg:"linear-gradient(#01426A 0 72%, #48A9C5 72%)"},
+  F9:{name:"Frontier",c:"#00764F",bg:"#00764F"}, AA:{name:"American",c:"#0078D2",bg:"linear-gradient(#0078D2 0 72%, #C30019 72%)"},
+};
+// minutes in the air: scheduled times from the confirmation emails; "est" ones use the same route's typical time
+const F = [["01-02","SEA","SJC","WN",140,1],["06-12","SFO","SEA","UA",150],["06-23","SEA","SJC","AS",131],["06-30","SFO","SEA","UA",134],["07-07","SEA","SJC","DL",143,1],["08-14","SFO","DFW","F9",210,1],["08-17","DFW","SFO","AA",220],["09-05","SJC","SEA","DL",135,1],["09-10","SEA","SJC","DL",140,1],["11-14","SFO","SEA","AS",135],["11-16","SEA","SFO","UA",139],["11-23","SJC","SEA","WN",150],["12-01","SEA","SJC","DL",143],["12-19","SJC","SEA","WN",140]];
+const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air,min,est])=>{const [m,d]=md.split("-").map(Number);return{m:m-1,d,from,to,air,min,est:!!est,mi:miles(AP[from],AP[to])};});
+const totalMi = fl.reduce((s,f)=>s+f.mi,0), totalKm = totalMi*1.609344, totalMin = fl.reduce((s,f)=>s+f.min,0);
+const nf = n => Math.round(n).toLocaleString("en-US");
+
+/* ---------- ticker: a plane per flight, destination code at each trip's end ---------- */
+const grad = ["#ff8fd1","#f88be0","#e48ef0","#c693fb","#a99cff","#8eaaff","#77b8ff","#66c5f5","#5fd0e6","#62d8d2","#71dcc0","#86dfae","#a0e09e","#bfe08f"];
+const planeSVG = c => `<svg viewBox="-12 -8 24 16"><path fill="${c}" d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -7 L-2.5 -7 L3 -1 Z M-2 1 L-5 7 L-2.5 7 L3 1 Z M-9 -1 L-10.5 -4 L-8.6 -4 L-6.5 -1 Z M-9 1 L-10.5 4 L-8.6 4 L-6.5 1 Z"/></svg>`;
+const tripEnds = new Set([0,3,4,6,8,11,13]);
+document.getElementById("ticker").innerHTML = fl.map((f,i) => planeSVG(grad[i]) + (tripEnds.has(i) ? `<span class="code" style="color:${grad[i]}">${f.to}</span>` : "")).join("");
+
+/* ---------- airline coins ---------- */
+const counts = Object.keys(AL).map(c=>[c, fl.filter(f=>f.air===c).length]).sort((a,b)=>b[1]-a[1]);
+document.getElementById("coins").innerHTML = counts.map(([c,n]) => `<span class="coin"><span>${LOGO[c].replace("<svg ", '<svg width="100%" height="100%" ')}</span><sup>${n}</sup></span>`).join("");
+
+/* ---------- stats ---------- */
+document.getElementById("grid").innerHTML = `
+  <div><small>FLIGHTS</small><b>${fl.length}</b></div>
+  <div class="w2" style="grid-column:2 / span 3"><small>FLIGHT DISTANCE</small><b>${nf(totalKm).replace(",", " ")}<u>km</u></b><div class="note">${nf(totalMi)} miles</div></div>
+  <div class="w2"><small>FLIGHT TIME</small><b>${Math.floor(totalMin/60)}h ${totalMin%60}m</b><div class="note">scheduled times · 5 estimated</div></div>
+  <div><small>AIRPORTS</small><b>4</b></div>
+  <div><small>AIRLINES</small><b>6</b></div>`;
+
+/* ---------- map: real coastlines, state lines, an arc per flight in its airline's color, red pins ---------- */
+document.fonts.ready.then(() => {
+  const W = 940, H = 370;
+  const svg = d3.select("#map").attr("viewBox", `0 0 ${W} ${H}`);
+  const proj = d3.geoConicConformal().parallels([33,45]).rotate([110,0])
+    .fitExtent([[20,20],[W-20,H-10]], { type:"MultiPoint", coordinates:[[-127,31.5],[-94,31.5],[-94,49],[-127,49]] });
+  const path = d3.geoPath(proj);
+  svg.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--water)");
+  const countries = topojson.feature(WORLD, WORLD.objects.countries).features;
+  svg.append("g").selectAll("path").data(countries).join("path").attr("d", path)
+    .attr("fill", d => d.id === "840" ? "var(--land)" : "var(--land2)").attr("stroke", "#c9d8c0").attr("stroke-width", 1);
+  const states = topojson.mesh(US, US.objects.states, (a,b) => a !== b);
+  svg.append("path").attr("d", path(states)).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 1.6);
+  const pt = c => proj([AP[c].lon, AP[c].lat]);
+  const g = {};
+  fl.forEach(f => {
+    const key = [f.from,f.to].sort().join("-"), n = (g[key] = (g[key]||0)+1) - 1;
+    const [a,b] = key.split("-").map(pt), dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy);
+    const side = key === "SEA-SJC" ? -1 : 1, k = .12 + .07*n;
+    const C = [(a[0]+b[0])/2 - dy/len*k*len*side, (a[1]+b[1])/2 + dx/len*k*len*side];
+    svg.append("path").attr("d", `M${a} Q${C} ${b}`).attr("fill","none").attr("stroke", AL[f.air].c).attr("stroke-width", 3).attr("stroke-linecap","round").attr("opacity", .9);
+  });
+  const LBL = { SEA:[16,-10,"start"], SFO:[-14,-8,"end"], SJC:[14,26,"start"], DFW:[-16,-44,"end"] };
+  Object.entries(AP).forEach(([c,a]) => {
+    const [x,y] = pt(c);
+    svg.append("path").attr("d", `M${x} ${y} c-9 -12 -16 -18 -16 -27 a16 16 0 0 1 32 0 c0 9 -7 15 -16 27z`).attr("fill", "var(--pin)").attr("stroke", "#8e1b24").attr("stroke-width", 1.5);
+    svg.append("circle").attr("cx", x).attr("cy", y-27).attr("r", 6).attr("fill", "#fff");
+    const [ox,oy,an] = LBL[c];
+    svg.append("text").attr("x", x+ox).attr("y", y+oy).attr("text-anchor", an).attr("font-family", "DM Sans").attr("font-weight", 700).attr("font-size", 24).attr("fill", "#17324a")
+      .attr("paint-order", "stroke").attr("stroke", "rgba(255,255,255,.85)").attr("stroke-width", 5).text(c);
+  });
+});
+
+/* ---------- stamp collage ---------- */
+(function stamps() {
+  const S = d3.select("#stamps");
+  const inks = ["#e6194b","#2e9e44","#3557d4","#f07a1a","#8e2bb0","#e0379e","#169c9c","#d4a100"];
+  const defs = S.append("defs");
+  const fx = defs.append("filter").attr("id","worn").attr("x","-20%").attr("y","-20%").attr("width","140%").attr("height","140%");
+  fx.append("feTurbulence").attr("type","fractalNoise").attr("baseFrequency",.9).attr("numOctaves",2).attr("seed",11).attr("result","n");
+  fx.append("feColorMatrix").attr("in","n").attr("type","matrix").attr("values","0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.5 1.55").attr("result","m");
+  fx.append("feComposite").attr("in","SourceGraphic").attr("in2","m").attr("operator","in");
+  const rnd = (i, k) => ((Math.sin(i * 9301 + k * 49297) * 233280) % 1 + 1) % 1;
+  const items = fl.map((f,i) => ({ kind:"flight", f, i })).concat([{ kind:"total", i:14 }]);
+  const cols = 8, cw = 1000/cols, rh = 495/2;
+  items.forEach((it, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = cw*col + cw/2 + (row ? cw/2 : 0) - 30 + (rnd(i,1)-.5)*40, y = rh*row + rh/2 + 22 + (rnd(i,2)-.5)*36, rot = (rnd(i,3)-.5)*36;
+    const ink = it.kind === "total" ? "#17324a" : inks[i % inks.length];
+    const g = S.append("g").attr("transform", `translate(${x},${y}) rotate(${rot})`).attr("filter","url(#worn)").attr("opacity", .96).style("mix-blend-mode","multiply");
+    const shape = it.kind === "total" ? 0 : i % 4;
+    const id = "arc" + i;
+    if (shape === 0 || shape === 3) {
+      const R = 92;
+      if (shape === 3) { // scalloped edge
+        let d = ""; const N = 28; for (let k=0;k<=N;k++){ const a=k/N*2*Math.PI, r=R+(k%2?6:-2); d += (k?"L":"M") + (Math.cos(a)*r).toFixed(1) + " " + (Math.sin(a)*r).toFixed(1); }
+        g.append("path").attr("d", d+"Z").attr("fill","none").attr("stroke",ink).attr("stroke-width",5);
+      } else g.append("circle").attr("r",R).attr("fill","none").attr("stroke",ink).attr("stroke-width",6);
+      g.append("circle").attr("r",R-16).attr("fill","none").attr("stroke",ink).attr("stroke-width",2.5);
+      defs.append("path").attr("id",id).attr("d",`M -66 0 A 66 66 0 0 1 66 0`);
+      defs.append("path").attr("id",id+"b").attr("d",`M -70 0 A 70 70 0 0 0 70 0`);
+      const top = it.kind === "total" ? "FLIGHT LOG BOOK" : `ARRIVED · ${AP[it.f.to].city}`;
+      const bot = it.kind === "total" ? `${nf(totalMi)} MILES` : `${MON[it.f.m]} ${it.f.d} 2026`;
+      g.append("text").attr("font-family","Rubik").attr("font-weight",800).attr("font-size",15).attr("letter-spacing",2).attr("fill",ink)
+        .append("textPath").attr("href","#"+id).attr("startOffset","50%").attr("text-anchor","middle").text(top);
+      g.append("text").attr("font-family","Rubik").attr("font-weight",800).attr("font-size",15).attr("letter-spacing",2).attr("fill",ink).attr("dy",12)
+        .append("textPath").attr("href","#"+id+"b").attr("startOffset","50%").attr("text-anchor","middle").text(bot);
+      g.append("text").attr("text-anchor","middle").attr("y",16).attr("font-family","Rubik").attr("font-weight",900).attr("font-size", it.kind === "total" ? 54 : 48).attr("fill",ink)
+        .text(it.kind === "total" ? "2026" : it.f.to);
+      g.append("text").attr("text-anchor","middle").attr("y",-26).attr("font-size",18).attr("fill",ink).text("★ ✈ ★");
+    } else if (shape === 1) { // double-bordered rectangle
+      g.append("rect").attr("x",-105).attr("y",-62).attr("width",210).attr("height",124).attr("rx",8).attr("fill","none").attr("stroke",ink).attr("stroke-width",6);
+      g.append("rect").attr("x",-95).attr("y",-52).attr("width",190).attr("height",104).attr("rx",4).attr("fill","none").attr("stroke",ink).attr("stroke-width",2);
+      g.append("text").attr("text-anchor","middle").attr("y",-22).attr("font-family","Rubik").attr("font-weight",800).attr("font-size",17).attr("letter-spacing",3).attr("fill",ink).text(AL[it.f.air].name.toUpperCase());
+      g.append("text").attr("text-anchor","middle").attr("y",20).attr("font-family","Rubik").attr("font-weight",900).attr("font-size",40).attr("fill",ink).text(`${it.f.from}→${it.f.to}`);
+      g.append("text").attr("text-anchor","middle").attr("y",44).attr("font-family","Rubik").attr("font-weight",800).attr("font-size",16).attr("letter-spacing",2).attr("fill",ink).text(`${MON[it.f.m]} ${it.f.d} 2026`);
+    } else { // oval
+      g.append("ellipse").attr("rx",112).attr("ry",76).attr("fill","none").attr("stroke",ink).attr("stroke-width",6);
+      g.append("ellipse").attr("rx",98).attr("ry",62).attr("fill","none").attr("stroke",ink).attr("stroke-width",2);
+      g.append("text").attr("text-anchor","middle").attr("y",-20).attr("font-family","Rubik").attr("font-weight",800).attr("font-size",16).attr("letter-spacing",3).attr("fill",ink).text("DEPARTED");
+      g.append("text").attr("text-anchor","middle").attr("y",22).attr("font-family","Rubik").attr("font-weight",900).attr("font-size",46).attr("fill",ink).text(it.f.from);
+      g.append("text").attr("text-anchor","middle").attr("y",46).attr("font-family","Rubik").attr("font-weight",800).attr("font-size",15).attr("letter-spacing",2).attr("fill",ink).text(`${MON[it.f.m]} ${it.f.d} · ${it.f.air}`);
+    }
+  });
+})();
+
+/* ---------- doodles (cute, outlined, kids-logbook style) ---------- */
+const O = 'stroke="#17324a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"';
+const face = (x,y,s=1) => `<g transform="translate(${x} ${y}) scale(${s})"><circle cx="-8" cy="0" r="3" fill="#17324a"/><circle cx="8" cy="0" r="3" fill="#17324a"/><path d="M-6 7 q6 6 12 0" fill="none" ${O} stroke-width="3"/><circle cx="-15" cy="7" r="4" fill="#ff9fb4"/><circle cx="15" cy="7" r="4" fill="#ff9fb4"/></g>`;
+const DOODLES = {
+  plane: `<svg viewBox="0 0 220 120"><path d="M20 70 q0 -26 40 -26 h90 q40 0 52 26 q-12 22 -52 22 h-90 q-40 0 -40 -22z" fill="#fff" ${O}/><path d="M40 46 l-14 -30 h22 l26 30z" fill="#ff8fb3" ${O}/><path d="M95 78 l-24 36 h26 l34 -36z" fill="#9fd3ff" ${O}/><circle cx="120" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/><circle cx="145" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/><circle cx="95" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/>${face(178,66,.8)}</svg>`,
+  cloud: `<svg viewBox="0 0 160 100"><path d="M30 80 a24 24 0 0 1 4 -46 a32 32 0 0 1 60 -10 a26 26 0 0 1 40 26 a20 20 0 0 1 -6 30z" fill="#7fc3f2" ${O}/>${face(80,56)}</svg>`,
+  suitcase: `<svg viewBox="0 0 120 150"><rect x="20" y="34" width="80" height="100" rx="14" fill="#ffd34d" ${O}/><path d="M44 34 v-16 h32 v16" fill="none" ${O}/><path d="M36 60 v52 M84 60 v52" ${O} opacity=".5"/><circle cx="38" cy="140" r="7" fill="#17324a"/><circle cx="82" cy="140" r="7" fill="#17324a"/>${face(60,84)}</svg>`,
+  tower: `<svg viewBox="0 0 110 190"><path d="M40 70 h30 l8 112 h-46z" fill="#e9edf2" ${O}/><path d="M18 40 h74 l-8 30 h-58z" fill="#9fd3ff" ${O}/><path d="M24 28 h62 v12 h-62z" fill="#5a7fa0" ${O}/><path d="M55 28 v-18" ${O}/><circle cx="55" cy="8" r="5" fill="#ff5d6c" ${O} stroke-width="3"/></svg>`,
+  headphones: `<svg viewBox="0 0 140 130"><path d="M24 80 v-14 a46 46 0 0 1 92 0 v14" fill="none" ${O} stroke-width="8"/><rect x="12" y="72" width="30" height="46" rx="12" fill="#ff5d6c" ${O}/><rect x="98" y="72" width="30" height="46" rx="12" fill="#ff5d6c" ${O}/></svg>`,
+  ticket: `<svg viewBox="0 0 180 90"><path d="M10 14 h160 v20 a12 12 0 0 0 0 22 v20 h-160 v-20 a12 12 0 0 0 0 -22z" fill="#fff" ${O}/><path d="M120 18 v54" ${O} stroke-dasharray="5 6"/><path d="M28 36 h70 M28 52 h46" ${O} stroke="#4fb6c8"/><text x="145" y="52" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="18" fill="#17324a">✈</text></svg>`,
+  star: `<svg viewBox="0 0 60 60"><path d="M30 6 l7 16 17 2 -13 11 4 17 -15 -9 -15 9 4 -17 -13 -11 17 -2z" fill="#ffd34d" ${O} stroke-width="3"/></svg>`,
+};
+const place = (k, x, y, w, rot=0) => `<div class="doodle" style="left:${x}px;top:${y}px;width:${w}px;transform:rotate(${rot}deg)">${DOODLES[k]}</div>`;
+document.getElementById("pg").insertAdjacentHTML("beforeend",
+  place("plane", 40, 40, 190, -8) + place("cloud", 860, 30, 170, 6) + place("star", 230, 30, 46) + place("star", 820, 170, 36, 20) +
+  place("tower", 975, 1300, 80, 4) + place("ticket", 14, 1345, 140, -12) + place("suitcase", 30, 1790, 100, -8) + place("headphones", 940, 1800, 110, 10) + place("star", 900, 1380, 40));
+</script>
+</body>
+</html>
