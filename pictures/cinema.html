@@ -160,7 +160,7 @@ document.getElementById("pg").insertAdjacentHTML("beforeend", `
     const ink = it.total ? "#1f4fa3" : inks[k % inks.length], shape = it.total ? 0 : k % 3;
     const box = shape === 0 ? "width:168px;height:168px;border-radius:50%;border:5px double" : shape === 1 ? "width:184px;height:132px;border-radius:8px;border:5px double" : "width:190px;height:136px;border-radius:50%;border:4px solid";
     const body = it.total ? `<small>ENTRIES</small><b>${fl.length}</b><small>${nf(TOTAL)} MI</small>`
-      : `<small>ARRIVED</small><b>${it.f.to}</b><small>${({1:"13 JUN", 3:"01 JUL", 13:"20 DEC"})[it.f.i] || pad(it.f.d) + " " + MON[it.f.m]} 2026</small><small>${NAME[it.f.air].toUpperCase()}</small>`;
+      : `<small>ARRIVED</small><b>${it.f.to}</b><small>${({1:"JUN 13", 3:"JUL 1", 13:"DEC 20"})[it.f.i] || MON[it.f.m] + " " + it.f.d}, 2026</small><small>${NAME[it.f.air].toUpperCase()}</small>`;
     return `<div class="st" style="left:${x}px;top:${y}px;${box} ${ink};color:${ink};transform:rotate(${rot}deg)"><div>${body}</div></div>`;
   }).join(""));
 })();
