@@ -2,6 +2,7 @@
 
 My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
+- **Dec 20 Story pick:** `pictures/final/2026-dec20-story.png` (Americana, light map + contrail; regenerate with `pictures/cinema.html#c7-ctu`)
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.
 - `pictures/` — three Instagram Story pictures (1080×1920): scrapbook, minimal, boarding-pass stack
 - `pictures/americana/` — look #7 with Americana: "FLY·2026" license plate, interstate shield, Washington/California/Texas state patches (`pictures/cinema.html#c7-ctu` etc.)
