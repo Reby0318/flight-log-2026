@@ -26,7 +26,7 @@ h1 span { display: inline-block; margin: 6px 0 0 110px; font: 400 68px/1 var(--m
 .mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
 .mapcard svg { width: 964px; height: 560px; display: block; border-radius: 4px; }
 .legend { display: flex; justify-content: space-between; align-items: center; padding: 18px 6px 0; }
-.legend div { display: flex; align-items: center; gap: 8px; font: 700 26px var(--hand); }
+.legend div { display: flex; align-items: center; gap: 4px; font: 700 28px var(--hand); }
 .legend .sw { display: block; height: 5px; border-radius: 3px; margin-top: 6px; }
 
 .note { position: absolute; padding: 22px 26px; box-shadow: 0 12px 20px rgba(30,30,50,.18); font-family: var(--hand); z-index: 8; }
@@ -46,7 +46,7 @@ h1 span { display: inline-block; margin: 6px 0 0 110px; font: 400 68px/1 var(--m
 .receipt h2 { font: 700 40px/1 var(--mono); text-align: center; letter-spacing: .06em; }
 .receipt .c { text-align: center; color: #666; font-size: 16px; margin-top: 6px; }
 .receipt .hr { border-top: 2px dashed #b5b5b5; margin: 14px 0; }
-.receipt .it { display: grid; grid-template-columns: 62px 1fr 78px 56px; align-items: center; height: 34px; }
+.receipt .it { display: grid; grid-template-columns: 62px 1fr 84px 54px; align-items: center; height: 34px; }
 .receipt .it span:last-child { text-align: right; }
 .receipt .tot { display: flex; justify-content: space-between; font: 700 30px var(--mono); }
 .receipt .sub { display: flex; justify-content: space-between; }
@@ -142,7 +142,7 @@ const TOTAL = fl.reduce((s,f)=>s+f.mi,0);
 const counts = Object.keys(NAME).map(c=>[c, fl.filter(f=>f.air===c).length]).sort((a,b)=>b[1]-a[1]);
 
 /* ---------- map legend: logo, count, and the line color it uses ---------- */
-document.getElementById("legend").innerHTML = counts.map(([c,n]) => `<div><span>${LOGO_PILL(c, 40, 118)}<span class="sw" style="background:${LINE[c]}"></span></span>×${n}</div>`).join("");
+document.getElementById("legend").innerHTML = counts.map(([c,n]) => `<div><span>${LOGO_PILL(c, 44, 122)}<span class="sw" style="background:${LINE[c]}"></span></span>×${n}</div>`).join("");
 
 /* ---------- sticky notes ---------- */
 const longest = fl.reduce((a,b) => b.mi > a.mi ? b : a);
@@ -171,7 +171,7 @@ document.getElementById("pg").insertAdjacentHTML("beforeend", `
   for (let i = 0; i < 60; i++) { h = (h * 1103515245 + 12345) >>> 0; bars += `<i style="display:inline-block;height:100%;margin-right:3px;background:#232323;width:${1 + (h >>> 28) % 4}px"></i>`; }
   document.getElementById("receipt").innerHTML = `
     <h2>FLIGHT LOG</h2><div class="c">2026 · ITEMIZED · TINGYUN</div><div class="hr"></div>
-    ${fl.map(f => `<div class="it"><span>${pad(f.m+1)}/${pad(f.d)}</span><span>${f.from}→${f.to}</span>${LOGO_PILL(f.air, 28, 76, "box-shadow:none")}<span>${nf(f.mi)}</span></div>`).join("")}
+    ${fl.map(f => `<div class="it"><span>${pad(f.m+1)}/${pad(f.d)}</span><span>${f.from}→${f.to}</span>${LOGO_PILL(f.air, 30, 82, "box-shadow:none")}<span>${nf(f.mi)}</span></div>`).join("")}
     <div class="hr"></div><div class="tot"><span>TOTAL MI</span><span>${nf(TOTAL)}</span></div>
     <div class="sub" style="margin-top:6px"><span>FLIGHTS</span><span>${fl.length}</span></div><div class="sub"><span>AIRLINES</span><span>6</span></div><div class="sub"><span>AIRPORTS</span><span>4</span></div>
     <div class="bc">${bars}</div><div class="c" style="color:#232323">THANK YOU FOR FLYING</div>`;
@@ -301,9 +301,9 @@ if (FX.has("u")) {
       <svg viewBox="0 0 120 130" style="width:100%"><path d="M8 14 Q60 -4 112 14 Q116 70 60 126 Q4 70 8 14 Z" fill="#fff"/><path d="M14 18 Q60 3 106 18 L105 38 H15 Z" fill="${RED}"/><path d="M15 42 H105 Q104 82 60 118 Q16 82 15 42 Z" fill="${NAVY}"/>
         <text x="60" y="33" text-anchor="middle" font-family="Anton" font-size="13" letter-spacing="1.5" fill="#fff">FLIGHTS</text>
         <text x="60" y="92" text-anchor="middle" font-family="Anton" font-size="46" fill="#fff">14</text></svg></div>
-    <div style="position:absolute;top:908px;left:34px;width:132px;transform:rotate(-8deg);z-index:9">${patch("wa", NAVY, CREAM, "WASHINGTON", "EVERGREEN STATE", tree)}</div>
-    <div style="position:absolute;top:920px;left:172px;width:132px;transform:rotate(5deg);z-index:9">${patch("ca", CREAM, RED, "CALIFORNIA", "GOLDEN STATE", sun)}</div>
-    <div style="position:absolute;top:904px;left:310px;width:132px;transform:rotate(-4deg);z-index:9">${patch("tx", RED, CREAM, "TEXAS", "LONE STAR STATE", star)}</div>`);
+    <div style="position:absolute;top:922px;left:34px;width:132px;transform:rotate(-8deg);z-index:9">${patch("wa", NAVY, CREAM, "WASHINGTON", "EVERGREEN STATE", tree)}</div>
+    <div style="position:absolute;top:934px;left:172px;width:132px;transform:rotate(5deg);z-index:9">${patch("ca", CREAM, RED, "CALIFORNIA", "GOLDEN STATE", sun)}</div>
+    <div style="position:absolute;top:918px;left:310px;width:132px;transform:rotate(-4deg);z-index:9">${patch("tx", RED, CREAM, "TEXAS", "LONE STAR STATE", star)}</div>`);
   // the plate takes the top-right corner, so the season-pass ticket moves down a little
   const tk = [...document.querySelectorAll("#pg > div")].find(d => /SEASON PASS/.test(d.textContent) && d.style.top === "150px");
   if (tk) { tk.style.top = "196px"; tk.style.left = "700px"; }
