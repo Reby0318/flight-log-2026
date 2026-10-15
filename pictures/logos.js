@@ -14,5 +14,5 @@
     UA: () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(united),
   };
   window.LOGO_PILL = (code, h = 40, w = 128, extra = "") =>
-    `<span class="logo" style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);flex:none;position:relative;vertical-align:middle;padding:${Math.round(h * .16)}px ${Math.round(h * .22)}px;box-sizing:border-box;${extra}"><img src="${LOGO_SRC[code]()}" alt="${code}" style="max-width:100%;max-height:100%;display:block"></span>`;
+    `<span class="logo" style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);flex:none;position:relative;vertical-align:middle;padding:${Math.round(h * .16)}px ${Math.round(h * .22)}px;box-sizing:border-box;${extra}"><img src="${LOGO_SRC[code]()}" alt="${code}" style="position:absolute;top:${Math.round(h * .16)}px;bottom:${Math.round(h * .16)}px;left:${Math.round(h * .22)}px;right:${Math.round(h * .22)}px;width:calc(100% - ${2 * Math.round(h * .22)}px);height:calc(100% - ${2 * Math.round(h * .16)}px);object-fit:contain;display:block"></span>`;
 })();
