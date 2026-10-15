@@ -4,6 +4,7 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.
 - `pictures/` — three Instagram Story pictures (1080×1920): scrapbook, minimal, boarding-pass stack
+- `pictures/tv/` — "Season 2026" TV-series pictures: title card, map on a TV screen, episode guide (one flight per episode); 10 looks incl. cartoon sci-fi portal styles (`pictures/tv.html#s1`…`#s10`)
 - `pictures/collages/` — 20 looks of the collage (easy, lively, luxury, anime, fun, beautiful, attractive, quality, interesting); overview in `00-overview.png`; regenerate with `pictures/collages.html#c1`…`#c20`
 - `pictures/final/2026-flights-collage.png` — "2026, flights I have taken / in the air.": sticky notes, itemized receipt and passport stamps around a pinned map (`pictures/collage.html`)
 - `pictures/final/2026-flight-passport.png` — combined design: kids-logbook page, app-style passport card, real map with an arc per flight, stamp collage (`pictures/passport.html`)

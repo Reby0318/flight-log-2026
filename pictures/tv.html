@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flights · TV Season</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter+Tight:wght@500;700;800&family=Bungee&family=Fredoka:wght@600;700&family=Monoton&family=Special+Elite&family=Oswald:wght@500;700&family=Luckiest+Guy&family=Creepster&family=IBM+Plex+Mono:wght@500;700&family=Caveat:wght@700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="world-countries.js"></script>
+<script src="us-states.js"></script>
+<script src="logos.js"></script>
+<style>
+/* "Season 2026" Story, 1080×1920: title card, the map on a TV screen, and an episode guide (one flight per episode). Themes #s1…#s10. */
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+.pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--bf); }
+.deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hd { position: absolute; top: 84px; left: 70px; right: 70px; text-align: var(--align, left); z-index: 2; }
+.hd .ey { font: var(--eyw, 700) 26px/1 var(--ef, var(--bf)); letter-spacing: .32em; text-transform: uppercase; color: var(--acc); }
+.hd h1 { white-space: var(--ws, nowrap); font: var(--tw, 900) var(--ts, 104px)/.95 var(--tf); margin-top: 14px; color: var(--title, var(--ink)); text-transform: var(--tt, none); letter-spacing: var(--tls, 0); text-shadow: var(--tsh, none); }
+.hd p { margin-top: 16px; font: 500 26px/1.2 var(--bf); color: var(--mute); letter-spacing: .04em; }
+
+.tv { position: absolute; top: 420px; left: 50px; width: 980px; height: 600px; padding: var(--bz, 22px); background: var(--bezel); border-radius: var(--tvr, 28px); box-shadow: var(--tvsh, 0 20px 40px rgba(0,0,0,.35)); z-index: 2; }
+.tv .scr { position: relative; width: 100%; height: 100%; border-radius: var(--scr, 14px); overflow: hidden; }
+.tv svg { display: block; width: 100%; height: 100%; }
+.bug { position: absolute; top: 14px; right: 16px; padding: 6px 12px; border-radius: 6px; font: 700 18px/1 var(--ef, var(--bf)); letter-spacing: .14em; background: var(--bugbg, rgba(0,0,0,.65)); color: var(--bugfg, #fff); z-index: 3; }
+.prev { position: absolute; left: 16px; bottom: 14px; font: var(--pw, 700) 26px/1 var(--pf, var(--tf)); font-style: var(--pst, normal); color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.7); z-index: 3; }
+.logos { position: absolute; top: 1036px; left: 60px; right: 60px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+.logos div { display: flex; align-items: center; gap: 6px; font: 700 22px var(--bf); color: var(--ink); }
+
+.guide { position: absolute; top: 1110px; left: 50px; right: 50px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; z-index: 2; }
+.ep { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; align-items: center; gap: 12px; height: 100px; padding: 0 14px; background: var(--card); border: var(--cb, 0); border-radius: var(--cr, 12px); box-shadow: var(--csh, none); }
+.ep .n { font: var(--nw, 800) 34px/1 var(--nf, var(--tf)); color: var(--nc, var(--acc)); }
+.ep .t { font: var(--etw, 700) 26px/1.05 var(--etf, var(--tf)); color: var(--cink, var(--ink)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ep .m { font: 500 17px/1.2 var(--bf); color: var(--cmute, var(--mute)); margin-top: 6px; white-space: nowrap; }
+.foot { position: absolute; bottom: 36px; left: 0; right: 0; text-align: center; font: 600 20px var(--bf); letter-spacing: .24em; text-transform: uppercase; color: var(--mute); z-index: 2; }
+</style>
+</head>
+<body>
+<div class="pg" id="pg"></div>
+<script>
+/* ---------- data, as of Dec 20, 2026 ---------- */
+const AP = { SEA:{lon:-122.309,lat:47.449,city:"Seattle"}, SFO:{lon:-122.375,lat:37.619,city:"San Francisco"}, SJC:{lon:-121.929,lat:37.363,city:"San José"}, DFW:{lon:-97.040,lat:32.899,city:"Dallas"} };
+const LINE = { DL:"#E3132C", UA:"#0B2A7A", WN:"#F5A800", AS:"#1FA0C0", F9:"#2E8B57", AA:"#0078D2" };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// date, from, to, airline, episode title
+const F = [["01-02","SEA","SJC","WN","Pilot"],["06-12","SFO","SEA","UA","The Red-Eye"],["06-23","SEA","SJC","AS","The Rebooking"],["06-30","SFO","SEA","UA","Red-Eye II"],["07-07","SEA","SJC","DL","Summer Shuttle"],["08-14","SFO","DFW","F9","Everything's Bigger"],["08-17","DFW","SFO","AA","Homecoming"],["09-05","SJC","SEA","DL","Back North"],["09-10","SEA","SJC","DL","Five Days Later"],["11-14","SFO","SEA","AS","Back to Seattle"],["11-16","SEA","SFO","UA","7 A.M."],["11-23","SJC","SEA","WN","Dawn Patrol"],["12-01","SEA","SJC","DL","Holiday Season"],["12-19","SJC","SEA","WN","Season Finale"]];
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air,title],i)=>{const [m,d]=md.split("-").map(Number);return{i,m:m-1,d,from,to,air,title,mi:miles(AP[from],AP[to]),key:[from,to].sort().join("-")};});
+const TOTAL = Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US");
+const counts = Object.keys(LINE).map(c=>[c, fl.filter(f=>f.air===c).length]).sort((a,b)=>b[1]-a[1]);
+
+/* ---------- themes ---------- */
+const swirl = (cx, cy, r, c1, c2) => `<div style="position:absolute;left:${cx-r}px;top:${cy-r}px;width:${2*r}px;height:${2*r}px;border-radius:50%;background:repeating-conic-gradient(from 0deg, ${c1} 0 12deg, ${c2} 12deg 24deg);-webkit-mask:radial-gradient(circle, #000 0 30%, rgba(0,0,0,.85) 55%, transparent 70%);mask:radial-gradient(circle, #000 0 30%, rgba(0,0,0,.85) 55%, transparent 70%);filter:blur(1px)"></div><div style="position:absolute;left:${cx-r*.42}px;top:${cy-r*.42}px;width:${r*.84}px;height:${r*.84}px;border-radius:50%;background:radial-gradient(circle,#eaffc4,${c1} 60%,transparent 72%)"></div>`;
+const drips = c => `<svg style="position:absolute;left:0;top:0;width:1080px;height:140px" viewBox="0 0 1080 140"><path d="M0 0 H1080 V40 Q1050 40 1046 70 Q1042 100 1030 70 Q1020 40 980 44 Q950 48 946 96 Q942 130 930 92 Q918 50 870 46 Q820 42 816 66 Q812 86 800 64 Q790 44 720 42 Q680 42 676 110 Q672 136 660 104 Q650 60 600 46 Q540 40 536 72 Q532 96 520 70 Q510 46 440 44 Q400 44 396 88 Q392 118 380 84 Q370 50 300 46 Q250 44 246 64 Q242 82 232 62 Q222 44 160 44 Q120 44 116 100 Q112 126 100 94 Q90 56 40 46 Q10 40 0 44Z" fill="${c}"/></svg>`;
+const stars = (n, c) => Array.from({length:n},(_,i)=>`<i style="position:absolute;left:${(i*137)%1080}px;top:${(i*251)%1920}px;width:${1+i%3}px;height:${1+i%3}px;border-radius:50%;background:${c};opacity:${.3+(i%5)*.13}"></i>`).join("");
+const scan = `<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 5px)"></div>`;
+const T = [
+  { name: "prestige drama", v: { "--bg":"radial-gradient(ellipse at 50% 20%, #2a2f38, #0d0f13 70%)", "--ink":"#f2efe8", "--mute":"#9a9488", "--acc":"#c9a45c", "--tf":"Playfair Display", "--bf":"Inter Tight", "--align":"center", "--ts":"96px", "--bezel":"#000", "--bz":"0px", "--tvr":"4px", "--scr":"0px", "--card":"rgba(255,255,255,.04)", "--cb":"1px solid rgba(201,164,92,.25)", "--cr":"2px", "--nf":"Playfair Display", "--etf":"Playfair Display", "--pf":"Playfair Display", "--pst":"italic" },
+    deco: `<div style="position:absolute;inset:0;background:radial-gradient(rgba(255,255,255,.04) 1px, transparent 1.5px) 0 0/4px 4px"></div>`, ey:"An original series · Season 2026", bug:"S2026", prev:"Previously…", water:"#2c3a4a", land:"#e9e4d8", land2:"#d9d3c4" },
+  { name: "classic sitcom", v: { "--bg":"#fff4e2", "--ink":"#2b2238", "--mute":"#7a6f86", "--acc":"#e8505b", "--tf":"Fredoka", "--bf":"Fredoka", "--align":"center", "--ts":"92px", "--tw":"700", "--ws":"normal", "--bezel":"#c98b4f", "--tvr":"40px", "--tvsh":"0 0 0 8px #8a5a2f, 0 24px 40px rgba(60,30,10,.3)", "--card":"#fff", "--cr":"18px", "--csh":"0 4px 0 rgba(43,34,56,.12)", "--etf":"Fredoka", "--nf":"Fredoka" },
+    deco: Array.from({length:7},(_,i)=>`<i style="position:absolute;left:${120+i*130}px;top:${60+(i%2)*26}px;width:34px;height:34px;border-radius:50%;background:${["#e8505b","#f5a623","#4a90e2","#7ed321","#9013fe","#f8e71c","#50e3c2"][i]}"></i>`).join(""), ey:"Season 2026 · Live studio audience", bug:"TV-G", prev:"previously on…", water:"#bde3f3", land:"#fffaf0", land2:"#f2ead8", titleHTML:`All the Flights<br>I Took` },
+  { name: "TV guide magazine", v: { "--bg":"#f4efe4", "--ink":"#1b1b1b", "--mute":"#5c5650", "--acc":"#d0021b", "--tf":"Oswald", "--bf":"Inter Tight", "--tt":"uppercase", "--ts":"88px", "--tw":"700", "--bezel":"#1b1b1b", "--bz":"10px", "--tvr":"0px", "--scr":"0px", "--card":"#fff", "--cb":"2px solid #1b1b1b", "--cr":"0px", "--nf":"Oswald", "--etf":"Oswald", "--etw":"500" },
+    deco: `<div style="position:absolute;top:0;left:0;right:0;height:62px;background:#d0021b"></div><div style="position:absolute;top:16px;left:70px;font:700 30px Oswald;letter-spacing:.3em;color:#fff">FLIGHT GUIDE · DEC 2026</div>`, ey:"This week's listings", bug:"CH 14", prev:"Tonight 8/7c", water:"#cfe0ea", land:"#fbf8f1", land2:"#ece6d8" },
+  { name: "80s retro VHS", v: { "--bg":"linear-gradient(180deg, #120a2e 0%, #3b0f5c 55%, #ff2e88 100%)", "--ink":"#fff", "--mute":"#ffb3e0", "--acc":"#31f4ff", "--tf":"Monoton", "--bf":"Inter Tight", "--align":"center", "--ts":"62px", "--tw":"400", "--title":"#ffd1f3", "--tsh":"0 0 18px #ff2e88, 0 0 2px #fff", "--bezel":"#1a1a1a", "--tvr":"34px", "--tvsh":"0 0 40px rgba(49,244,255,.45)", "--card":"rgba(18,10,46,.6)", "--cb":"2px solid #31f4ff", "--cr":"6px", "--nf":"Monoton", "--nw":"400", "--etf":"Inter Tight", "--bugbg":"#ff2e88" },
+    deco: `<div style="position:absolute;left:0;right:0;bottom:0;height:520px;background:linear-gradient(transparent 0 96%, rgba(49,244,255,.7) 96%) 0 0/100% 40px, linear-gradient(90deg, transparent 0 97%, rgba(49,244,255,.7) 97%) 0 0/60px 100%;transform:perspective(500px) rotateX(55deg);transform-origin:bottom;opacity:.5"></div>${scan}`, ey:"Season 2026 · Recorded on tape", bug:"▶ PLAY", prev:"REC ●", water:"#2a3f8f", land:"#f3eaff", land2:"#d9cdf0" },
+  { name: "crime case file", v: { "--bg":"radial-gradient(ellipse at 50% 30%, #3b3a36, #1e1d1b 80%)", "--ink":"#2b241a", "--mute":"#6a5d48", "--acc":"#b3202a", "--tf":"Special Elite", "--bf":"Special Elite", "--ts":"66px", "--tw":"400", "--title":"#f3e7cc", "--bezel":"#f3e7cc", "--bz":"14px", "--tvr":"4px", "--scr":"0px", "--tvsh":"0 18px 30px rgba(0,0,0,.5)", "--card":"#e9d9b2", "--cr":"2px", "--nf":"Special Elite", "--etf":"Special Elite", "--etw":"400", "--bugbg":"#b3202a" },
+    deco: `<div style="position:absolute;top:60px;left:40px;right:40px;height:330px;background:#c8a96b;border-radius:6px;transform:rotate(-1deg)"></div><div style="position:absolute;top:300px;right:70px;font:400 40px 'Special Elite';color:#b3202a;border:5px solid #b3202a;padding:6px 16px;transform:rotate(-8deg);opacity:.85">CASE CLOSED</div><svg style="position:absolute;inset:0" viewBox="0 0 1080 1920"><path d="M140 1060 L520 1000 L940 1070" stroke="#b3202a" stroke-width="3" fill="none"/></svg>`, ey:"Case file · 2026", bug:"EVIDENCE", prev:"Exhibit A", water:"#b9c4c0", land:"#f3ead6", land2:"#e2d6bb", mute2:"#e9d9b2" },
+  { name: "breaking news", v: { "--bg":"linear-gradient(180deg, #0a1f44, #08142b)", "--ink":"#fff", "--mute":"#a9b8d4", "--acc":"#ffcc00", "--tf":"Oswald", "--bf":"Inter Tight", "--tt":"uppercase", "--ts":"84px", "--tw":"700", "--bezel":"#0a1f44", "--bz":"0px", "--tvr":"0px", "--scr":"0px", "--card":"#ffffff", "--cink":"#0a1f44", "--cmute":"#5a6b8a", "--cr":"0px", "--nf":"Oswald", "--etf":"Oswald", "--etw":"700", "--bugbg":"#d0021b" },
+    deco: `<div style="position:absolute;top:290px;left:0;right:0;height:56px;background:#d0021b"></div><div style="position:absolute;top:300px;left:70px;font:700 34px Oswald;color:#fff;letter-spacing:.06em">BREAKING · 14 FLIGHTS CONFIRMED · ${TOTAL} MILES</div><div style="position:absolute;bottom:0;left:0;right:0;height:84px;background:#ffcc00"></div>`, ey:"Live · Year in review", hideSub:true, bug:"● LIVE", prev:"Flight tracker", water:"#1d3c6e", land:"#eef3fb", land2:"#d6e0ee", footInk:"#0a1f44" },
+  { name: "late-night talk show", v: { "--bg":"linear-gradient(180deg, #0b1640 0%, #1c2f7a 60%, #3a1d5c 100%)", "--ink":"#fff", "--mute":"#c9d3ff", "--acc":"#ffb84d", "--tf":"Playfair Display", "--bf":"Inter Tight", "--align":"center", "--ts":"96px", "--title":"#fff", "--tsh":"0 0 24px rgba(255,184,77,.5)", "--bezel":"#d7b46a", "--bz":"12px", "--tvr":"16px", "--card":"rgba(255,255,255,.1)", "--cb":"1px solid rgba(255,255,255,.2)", "--cr":"10px", "--etf":"Playfair Display", "--nf":"Playfair Display" },
+    deco: `<svg style="position:absolute;left:0;bottom:0;width:1080px;height:360px" viewBox="0 0 1080 360"><path d="M0 360 V250 h60 v-60 h40 v80 h50 v-140 h60 v120 h40 v-90 h70 v130 h50 v-180 h60 v170 h40 v-70 h60 v100 h50 v-150 h70 v140 h40 v-90 h60 v120 h50 v-60 h80 v90 V360Z" fill="rgba(5,10,30,.75)"/></svg>${stars(70,"#fff")}<div style="position:absolute;left:-120px;top:-60px;width:520px;height:900px;background:linear-gradient(160deg, rgba(255,240,200,.18), transparent 60%);transform:rotate(-18deg)"></div><div style="position:absolute;right:-120px;top:-60px;width:520px;height:900px;background:linear-gradient(200deg, rgba(255,240,200,.18), transparent 60%);transform:rotate(18deg)"></div>`, ey:"Tonight's guest: my 2026", bug:"LATE", prev:"Tonight", water:"#2b4a9a", land:"#f4f1ff", land2:"#dcd6f5" },
+  { name: "portal cartoon", v: { "--bg":"radial-gradient(ellipse at 50% 15%, #1d4d2b, #0b1f12 70%)", "--ink":"#eaffd0", "--mute":"#a7d98a", "--acc":"#9cff3a", "--tf":"Luckiest Guy", "--bf":"Fredoka", "--align":"center", "--ts":"74px", "--tw":"400", "--title":"#c6ff6a", "--tsh":"4px 4px 0 #0b1f12, -2px -2px 0 #0b1f12, 0 0 30px rgba(156,255,58,.6)", "--bezel":"#a8a8b8", "--bz":"18px", "--tvr":"46px 30px 52px 34px", "--scr":"32px 20px 38px 24px", "--tvsh":"0 0 0 6px #0b1f12, 0 0 60px rgba(156,255,58,.45)", "--card":"#eaffd0", "--cink":"#0b1f12", "--cmute":"#3e6b2a", "--cb":"5px solid #0b1f12", "--cr":"22px 14px 26px 12px", "--nf":"Luckiest Guy", "--nw":"400", "--etf":"Fredoka", "--bugbg":"#9cff3a", "--bugfg":"#0b1f12", "--nc":"#2f8f1f" },
+    deco: swirl(540, 250, 300, "#7dff3a", "#2fc13a") + drips("#7dff3a") + stars(50, "#d9ffb0"), ey:"Season 2026 · Across dimensions", bug:"PORTAL 14", prev:"next stop…", water:"#5fd9b0", land:"#f4ffe2", land2:"#dff3c2", foot:"14 jumps · 6 airlines · 4 portals" },
+  { name: "alien dimension", v: { "--bg":"linear-gradient(180deg, #2b0f4c 0%, #5b1f7a 45%, #ff7a59 100%)", "--ink":"#fff", "--mute":"#ffd6f0", "--acc":"#7dff3a", "--tf":"Creepster", "--bf":"Fredoka", "--align":"center", "--ts":"92px", "--tw":"400", "--title":"#9cff3a", "--tsh":"5px 5px 0 #2b0f4c", "--bezel":"#2b0f4c", "--bz":"16px", "--tvr":"40px 26px 44px 30px", "--scr":"28px 18px 32px 20px", "--tvsh":"0 0 0 5px #9cff3a, 0 20px 40px rgba(0,0,0,.4)", "--card":"#fff4fb", "--cink":"#2b0f4c", "--cmute":"#7a4a8f", "--cb":"5px solid #2b0f4c", "--cr":"20px 12px 24px 14px", "--nf":"Luckiest Guy", "--nw":"400", "--etf":"Fredoka", "--bugbg":"#9cff3a", "--bugfg":"#2b0f4c", "--nc":"#7a2fa0" },
+    deco: `<div style="position:absolute;left:760px;top:70px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #ffe6a0, #ff9a5a 70%)"></div><div style="position:absolute;left:90px;top:200px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #c9f7ff, #5ab8ff 70%)"></div><div style="position:absolute;left:250px;top:110px;width:54px;height:54px;border-radius:50%;background:#ffd1f3"></div>` + stars(60, "#fff"), ey:"Season 2026 · Another dimension", bug:"DIM C-2026", prev:"meanwhile…", water:"#8fe3ff", land:"#fff4fb", land2:"#f2dff0", foot:"14 jumps · 6 airlines · 4 portals" },
+  { name: "cable from everywhere", v: { "--bg":"radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.5px) 0 0/5px 5px, radial-gradient(rgba(0,0,0,.25) 1px, transparent 1.5px) 2px 3px/7px 7px, #3a3d45", "--ink":"#fff", "--mute":"#d0d4dc", "--acc":"#9cff3a", "--tf":"Luckiest Guy", "--bf":"Fredoka", "--align":"center", "--ts":"72px", "--tw":"400", "--title":"#fff", "--tsh":"4px 4px 0 #ff3ea5", "--bezel":"#7a5236", "--bz":"30px", "--tvr":"48px", "--scr":"40px", "--tvsh":"0 0 0 6px #3b2416, 0 24px 40px rgba(0,0,0,.5)", "--card":"#ffffff", "--cink":"#22252b", "--cmute":"#5d636e", "--cb":"4px solid #22252b", "--cr":"16px", "--nf":"Luckiest Guy", "--nw":"400", "--etf":"Fredoka", "--bugbg":"#ff3ea5", "--nc":"#e0207f" },
+    deco: swirl(900, 300, 170, "#7dff3a", "#2fc13a") + scan, ey:"Channel 2026 · Now playing everywhere", bug:"CH ∞", prev:"now showing…", water:"#7fd6ff", land:"#fdfdf8", land2:"#e8e8de", foot:"14 jumps · 6 airlines · 4 portals" },
+];
+const sm = /^#s(\d+)$/.exec(location.hash);
+const th = T[(sm ? Math.min(T.length, Math.max(1, +sm[1])) : 1) - 1];
+
+/* ---------- page ---------- */
+const pg = document.getElementById("pg");
+Object.entries(th.v).forEach(([k, v]) => pg.style.setProperty(k, v));
+pg.innerHTML = `
+  <div class="deco">${th.deco || ""}</div>
+  <div class="hd"><div class="ey">${th.ey}</div><h1>${th.titleHTML || "All the Flights I Took"}</h1>${th.hideSub ? "" : `<p>14 episodes · 6 airlines · ${TOTAL} miles</p>`}</div>
+  <div class="tv"><div class="scr"><svg id="map"></svg><span class="bug">${th.bug}</span><span class="prev">${th.prev}</span></div></div>
+  <div class="logos">${counts.map(([c,n]) => `<div>${LOGO_PILL(c, 38, 116)}×${n}</div>`).join("")}</div>
+  <div class="guide">${fl.map((f, k) => `<div class="ep"><span class="n">E${String(k + 1).padStart(2, "0")}</span><div style="min-width:0"><div class="t">${f.title}</div><div class="m">${MON[f.m]} ${f.d} · ${f.from} → ${f.to}</div></div>${LOGO_PILL(f.air, 30, 92)}</div>`).join("")}</div>
+  <div class="foot" style="${th.footInk ? `color:${th.footInk}` : ""}">${th.foot || "14 episodes · 4 airports · one great season"}</div>`;
+
+/* ---------- map on the TV screen ---------- */
+document.fonts.ready.then(() => {
+  const box = document.querySelector(".tv .scr"), W = box.clientWidth, H = box.clientHeight;
+  const svg = d3.select("#map").attr("viewBox", `0 0 ${W} ${H}`);
+  const proj = d3.geoConicConformal().parallels([33,45]).rotate([110,0]).fitExtent([[24,24],[W-24,H-24]], { type:"MultiPoint", coordinates:[[-126.5,31.3],[-94,31.3],[-94,49.2],[-126.5,49.2]] });
+  const path = d3.geoPath(proj);
+  svg.append("rect").attr("width", W).attr("height", H).attr("fill", th.water);
+  svg.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path").attr("d", path).attr("fill", d => d.id === "840" ? th.land : th.land2).attr("stroke", "rgba(0,0,0,.15)");
+  svg.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (a,b) => a !== b))).attr("fill","none").attr("stroke","rgba(0,0,0,.14)").attr("stroke-width",1.2);
+  const pt = c => proj([AP[c].lon, AP[c].lat]);
+  [{ key:"SEA-SJC", a:"SEA", b:"SJC", side:-1, k:.2 }, { key:"SEA-SFO", a:"SEA", b:"SFO", side:1, k:.2 }, { key:"DFW-SFO", a:"SFO", b:"DFW", side:-1, k:.22 }].forEach(r => {
+    const rf = fl.filter(f => f.key === r.key), A = pt(r.a), B = pt(r.b), dx = B[0]-A[0], dy = B[1]-A[1], len = Math.hypot(dx, dy), nx = -dy/len*r.side, ny = dx/len*r.side;
+    rf.forEach((f, i) => {
+      const kk = rf.length > 1 ? r.k * (.45 + 1.1 * i / (rf.length - 1)) : r.k;
+      const d = `M${A} Q${(A[0]+B[0])/2 + nx*kk*len},${(A[1]+B[1])/2 + ny*kk*len} ${B}`;
+      svg.append("path").attr("d", d).attr("fill","none").attr("stroke","#fff").attr("stroke-width",8).attr("stroke-linecap","round");
+      svg.append("path").attr("d", d).attr("fill","none").attr("stroke", LINE[f.air]).attr("stroke-width",4.5).attr("stroke-linecap","round");
+    });
+  });
+  const L = { SEA:[16,-12,"start"], SFO:[-16,-6,"end"], SJC:[16,28,"start"], DFW:[16,6,"start"] };
+  Object.entries(AP).forEach(([c,a]) => {
+    const [x,y] = pt(c);
+    svg.append("circle").attr("cx",x).attr("cy",y).attr("r",9).attr("fill","#fff").attr("stroke","#1d1d1f").attr("stroke-width",3.5);
+    svg.append("text").attr("x",x+L[c][0]).attr("y",y+L[c][1]).attr("text-anchor",L[c][2]).attr("font-family","Inter Tight").attr("font-weight",800).attr("font-size",30).attr("fill","#1d1d1f").attr("paint-order","stroke").attr("stroke","rgba(255,255,255,.9)").attr("stroke-width",6).text(c);
+  });
+});
+</script>
+</body>
+</html>
