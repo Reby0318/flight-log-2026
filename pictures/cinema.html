@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flights · TV & Blockbuster</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=Anton&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Cinzel:wght@700;900&family=Inter+Tight:wght@500;700;800&family=Bangers&family=Permanent+Marker&family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;700&family=Big+Shoulders+Display:wght@700;900&family=DM+Sans:wght@500;700&family=Archivo:wght@800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="world-countries.js"></script>
+<script src="us-states.js"></script>
+<script src="logos.js"></script>
+<style>
+/* A desk collage, 1080×1920: handwritten title, pinned map clipping, sticky notes, a passport page of stamps (left) and an itemized receipt (right). */
+:root { --wall: #eceef1; --ink: #262a33; --pin: #d63a3a; --hand: "Caveat", cursive; --marker: "Permanent Marker", cursive; --mono: "IBM Plex Mono", monospace; --typed: "Special Elite", monospace; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+.pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--wall); color: var(--ink); }
+h1 { position: absolute; top: 34px; left: 56px; font: 700 88px/.95 var(--hand); transform: rotate(-2deg); color: var(--title, #262a33); }
+h1 small { display: block; width: max-content; margin: 0 0 10px 6px; padding: 8px 18px 6px; border-radius: 999px; background: #fff; color: #262a33; font: 500 22px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; transform: rotate(2deg); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+h1 span { display: inline-block; margin: 6px 0 0 110px; font: 400 68px/1 var(--marker); background: linear-gradient(transparent 55%, var(--hl) 55% 92%, transparent 92%); padding: 0 12px; transform: rotate(-3deg); color: var(--hlInk, #262a33); }
+.doodle { position: absolute; z-index: 9; }
+.burst { position: absolute; z-index: 10; }
+.pin { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, var(--pin) 60%); box-shadow: 0 4px 5px rgba(0,0,0,.3); z-index: 9; }
+.tape { position: absolute; height: 46px; background: repeating-linear-gradient(45deg, rgba(255,255,255,.38) 0 7px, transparent 7px 14px), var(--tape1); z-index: 9; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+.mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
+.mapcard svg { width: 964px; height: 560px; display: block; border-radius: 4px; }
+.legend { display: flex; justify-content: space-between; align-items: center; padding: 18px 6px 0; }
+.legend div { display: flex; align-items: center; gap: 8px; font: 700 26px var(--hand); }
+.legend .sw { display: block; height: 5px; border-radius: 3px; margin-top: 6px; }
+
+.note { position: absolute; padding: 22px 26px; box-shadow: 0 12px 20px rgba(30,30,50,.18); font-family: var(--hand); z-index: 8; }
+.note b { display: block; font: 400 40px/1 var(--marker); margin-bottom: 10px; }
+.note div { font-size: 38px; line-height: 44px; }
+
+.passport { position: absolute; top: 960px; left: 34px; width: 560px; height: 920px; transform: rotate(-3deg); border-radius: 10px; overflow: hidden; box-shadow: 0 18px 34px rgba(30,40,60,.22);
+  background: repeating-radial-gradient(circle at 50% 45%, transparent 0 14px, rgba(40,100,90,.08) 14px 16px), var(--pp); }
+.passport .hd { position: absolute; top: 26px; left: 34px; right: 34px; display: flex; justify-content: space-between; font: 400 22px var(--typed); letter-spacing: .4em; color: #4f6f68; }
+.passport .no { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font: 400 22px var(--typed); color: #4f6f68; }
+.st { position: absolute; display: grid; place-items: center; text-align: center; font-family: var(--typed); mix-blend-mode: multiply; opacity: .88; }
+.st b { display: block; font: 900 54px/1 "Big Shoulders Display"; letter-spacing: .05em; }
+.st small { display: block; font-size: 15px; letter-spacing: .12em; }
+
+.receipt { position: absolute; top: 990px; left: 600px; width: 450px; height: 900px; background: var(--rc); transform: rotate(2.5deg); box-shadow: 0 18px 34px rgba(30,40,60,.2); padding: 36px 30px; font: 400 19px/1.45 var(--mono); color: #232323; }
+.receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -12px; height: 12px; background: linear-gradient(135deg, var(--rc) 50%, transparent 50%) 0 0/24px 24px, linear-gradient(225deg, var(--rc) 50%, transparent 50%) 0 0/24px 24px; }
+.receipt h2 { font: 700 40px/1 var(--mono); text-align: center; letter-spacing: .06em; }
+.receipt .c { text-align: center; color: #666; font-size: 16px; margin-top: 6px; }
+.receipt .hr { border-top: 2px dashed #b5b5b5; margin: 14px 0; }
+.receipt .it { display: grid; grid-template-columns: 62px 1fr 78px 56px; align-items: center; height: 34px; }
+.receipt .it span:last-child { text-align: right; }
+.receipt .tot { display: flex; justify-content: space-between; font: 700 30px var(--mono); }
+.receipt .sub { display: flex; justify-content: space-between; }
+.receipt .bc { height: 64px; margin: 18px auto 8px; width: max-content; }
+</style>
+</head>
+<body>
+<div class="pg" id="pg">
+  <h1><small>✈ my year in the air</small>All the flights<br><span>I took in 2026</span></h1>
+
+  <div class="mapcard"><svg id="map"></svg><div class="legend" id="legend"></div></div>
+  <span class="pin" style="top:262px;left:520px"></span>
+
+  <div class="passport" id="passport"><div class="hd"><span>VISAS</span><span>2026</span></div><div class="no">— 14 —</div></div>
+  <div class="tape" style="top:940px;left:200px;width:170px;transform:rotate(-8deg)"></div>
+
+  <div class="receipt" id="receipt"></div>
+  <div class="tape" style="top:972px;left:760px;width:150px;transform:rotate(6deg);background:var(--tape2)"></div>
+</div>
+<script>
+
+/* ---------- 20 looks: pick with #c1 … #c20 ---------- */
+const dots = c => `radial-gradient(${c} 1px, transparent 1.5px) 0 0/12px 12px`;
+const BASE = { wall: `${dots("rgba(0,0,0,.035)")}, #eceef1`, title: "#262a33", hl: "#ffd36b", tape1: "rgba(255,226,140,.75)", tape2: "rgba(160,210,255,.7)", pp: "#dfeae5", rc: "#fff", n1: "#ffe680", n2: "#a8e6cf", water: "#cfe5f3", land: "#f4f2ea", land2: "#e9e6db", mirror: false };
+const sparkle = (n, colors, seed = 1) => Array.from({ length: n }, (_, i) => { const x = (i * 197 + seed * 53) % 1080, y = (i * 331 + seed * 97) % 1920, s = 10 + (i * 7) % 18, c = colors[i % colors.length];
+  return `<svg style="position:absolute;left:${x}px;top:${y}px;width:${s}px;height:${s}px" viewBox="0 0 20 20"><path d="M10 0 L12 8 L20 10 L12 12 L10 20 L8 12 L0 10 L8 8Z" fill="${c}"/></svg>`; }).join("");
+const confetti = (n, colors) => Array.from({ length: n }, (_, i) => { const x = (i * 211) % 1080, y = (i * 389) % 1920, w = 10 + (i * 5) % 14, r = (i * 37) % 180, c = colors[i % colors.length], round = i % 3 === 0;
+  return `<i style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${round ? w : w / 2.4}px;border-radius:${round ? "50%" : "2px"};background:${c};transform:rotate(${r}deg);opacity:.85"></i>`; }).join("");
+const halftone = (c, size = 9) => `radial-gradient(${c} 1.6px, transparent 2px) 0 0/${size}px ${size}px`;
+const grain = `radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.5px) 0 0/4px 4px`;
+const TV = { kind: "tv", sat: .35 }, MOVIE = { kind: "movie", sat: 0, doodles: false };
+const THEMES = [
+  // ---------- American TV series ----------
+  { ...TV, name: "prestige drama", wall: `${grain}, radial-gradient(ellipse at 50% 15%, #2b2f36, #0e1013 75%)`, title: "#efe7d6", hl: "#b8954f", hlInk: "#111", hlFull: true, n1: "#efe7d6", n2: "#d9d4c8", tape1: "rgba(184,149,79,.7)", tape2: "rgba(239,231,214,.6)", pp: "#e6e2d8", rc: "#f7f4ee", water: "#c9d0d6", land: "#f6f3ec", land2: "#e7e2d6",
+    h1: "font-family:'Playfair Display';font-weight:900;font-size:80px;letter-spacing:.01em", eye: "An original series · Season 2026", cap: "Previously on…" },
+  { ...TV, name: "network sitcom", wall: `#f3ece0`, hl: "#1f3a5f", hlInk: "#fff", hlFull: true, n1: "#ffffff", n2: "#e7dfd0", tape1: "rgba(31,58,95,.35)", tape2: "rgba(31,58,95,.25)", pp: "#e9e6dd", water: "#d3dde6",
+    h1: "font-family:'Inter Tight';font-weight:800;font-size:76px;letter-spacing:-.02em", eye: "Season 2026 · Filmed before a live audience", cap: "Last time on…" },
+  { ...TV, name: "crime procedural", wall: `radial-gradient(ellipse at 50% 30%, #4a4d52, #26282c 80%)`, title: "#ece8df", hl: "#8f1d21", hlInk: "#fff", hlFull: true, n1: "#e9dcbc", n2: "#d6cdb8", tape1: "rgba(233,220,188,.7)", tape2: "rgba(233,220,188,.55)", pp: "#e3e1da", rc: "#f2efe7", water: "#c4cacd", land: "#f3f0e8", land2: "#e3ded2",
+    h1: "font-family:'Special Elite';font-weight:400;font-size:74px", eye: "Case file · Season 2026", cap: "Exhibit A" },
+  { ...TV, name: "legal drama", wall: `#eef0f3`, hl: "#16233b", hlInk: "#fff", hlFull: true, n1: "#ffffff", n2: "#dfe4ea", tape1: "rgba(22,35,59,.25)", tape2: "rgba(22,35,59,.2)", pp: "#e6e9ec", water: "#cfd9e3",
+    h1: "font-family:'Playfair Display';font-weight:700;font-size:80px", eye: "Season 2026 · Opening statements", cap: "The evidence" },
+  { ...TV, name: "late-night show", wall: `radial-gradient(ellipse 500px 700px at 20% 0%, rgba(255,240,210,.12), transparent 70%), radial-gradient(ellipse 500px 700px at 80% 0%, rgba(255,240,210,.12), transparent 70%), linear-gradient(#141c35, #0c1124)`, title: "#ffffff", hl: "#d9b56a", hlInk: "#141c35", hlFull: true, n1: "#f2ead8", n2: "#dfe3ee", tape1: "rgba(217,181,106,.7)", pp: "#e8e8ee", water: "#c7d0e6",
+    h1: "font-family:'Playfair Display';font-weight:900;font-size:78px", eye: "Tonight · My 2026", cap: "Tonight's guest: the map" },
+  { ...TV, name: "Sunday-night original", wall: `${grain}, #0b0b0c`, title: "#ffffff", hl: "#ffffff", hlInk: "#0b0b0c", hlFull: true, n1: "#f1f1f1", n2: "#d9d9d9", tape1: "rgba(255,255,255,.5)", tape2: "rgba(255,255,255,.4)", pp: "#e5e5e5", rc: "#f5f5f5", water: "#cfd3d8", land: "#f7f7f7", land2: "#e6e6e6",
+    h1: "font-family:'Inter Tight';font-weight:700;font-size:72px;letter-spacing:.12em;text-transform:uppercase", eye: "An original series", cap: "Episode 14" },
+  { ...TV, name: "90s teen drama", wall: `repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 6px), #5d7896`, title: "#fbf6ec", hl: "#fbf6ec", hlInk: "#2f4560", hlFull: true, n1: "#fbf6ec", n2: "#e6d9c3", tape1: "rgba(251,246,236,.6)", pp: "#e9ecef", water: "#cad7e4",
+    h1: "font-family:'Caveat';font-weight:700;font-size:92px", eye: "Season 2026 · Coming of age at 35,000 ft", cap: "Previously…" },
+  { ...TV, name: "documentary series", wall: `#e9e1d3`, hl: "#3b3328", hlInk: "#f3ede2", hlFull: true, n1: "#f6f1e7", n2: "#ddd2bf", tape1: "rgba(59,51,40,.25)", tape2: "rgba(59,51,40,.2)", pp: "#e6e0d3", water: "#ccd3d0",
+    h1: "font-family:'Playfair Display';font-weight:700;font-style:italic;font-size:82px", eye: "A docuseries in 14 parts", cap: "Part 1: the routes" },
+  { ...TV, name: "news magazine", wall: `#f6f5f2`, hl: "#a3161a", hlInk: "#fff", hlFull: true, n1: "#ffffff", n2: "#ece9e2", tape1: "rgba(163,22,26,.3)", tape2: "rgba(20,20,20,.18)", pp: "#e8e8e5", water: "#d4dbe1",
+    h1: "font-family:'Anton';font-weight:400;font-size:84px;text-transform:uppercase;letter-spacing:.01em", eye: "Special report · 2026 in review", cap: "Live tracker" },
+  { ...TV, name: "mystery thriller", wall: `radial-gradient(ellipse at 30% 20%, #2f4a4c, #121c1e 80%)`, title: "#e6efe9", hl: "#9db7ad", hlInk: "#121c1e", hlFull: true, n1: "#e6efe9", n2: "#cfdad4", tape1: "rgba(157,183,173,.6)", pp: "#e2e8e5", water: "#bccbc7", land: "#f2f5f2", land2: "#e0e6e2",
+    h1: "font-family:'Cinzel';font-weight:900;font-size:66px", eye: "Season 2026 · Nothing is what it seems", cap: "Clue no. 1" },
+  // ---------- superhero blockbuster ----------
+  { ...MOVIE, name: "blockbuster title block", wall: `${grain}, radial-gradient(ellipse at 50% 20%, #2a2a2e, #0f0f11 75%)`, title: "#ffffff", hl: "#a6161c", hlInk: "#ffffff", hlFull: true, n1: "#f1ede6", n2: "#ddd8cf", tape1: "rgba(166,22,28,.75)", tape2: "rgba(241,237,230,.5)", pp: "#e4e2dd", rc: "#f6f4f0", water: "#c6ccd2", land: "#f5f3ee", land2: "#e4e0d8",
+    h1: "font-family:'Bebas Neue';font-weight:400;font-size:104px;letter-spacing:.02em", eye: "A Tingyun production", cap: "Based on true flights" },
+  { ...MOVIE, name: "comic book", wall: `${halftone("rgba(0,0,0,.14)")}, #f2efe8`, hl: "#c8202a", hlInk: "#fff", hlFull: true, n1: "#ffffff", n2: "#f0ebe0", tape1: "rgba(20,20,20,.2)", tape2: "rgba(200,32,42,.3)", pp: "#e9e7e1", cards: "border: 5px solid #111; box-shadow: 10px 10px 0 #111",
+    h1: "font-family:'Bangers';font-weight:400;font-size:100px;letter-spacing:.03em", eye: "Issue #14 · 2026", cap: "Meanwhile…" },
+  { ...MOVIE, name: "steel & smoke", wall: `radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.12), transparent 60%), linear-gradient(180deg, #3d434b, #16191d)`, title: "#e7ebef", hl: "#c9ced4", hlInk: "#16191d", hlFull: true, n1: "#e9ecef", n2: "#cfd4da", tape1: "rgba(201,206,212,.6)", pp: "#e2e5e8", water: "#bfc8d1", land: "#f2f4f6", land2: "#dfe3e7", cards: "border: 3px solid #9aa3ad",
+    h1: "font-family:'Anton';font-weight:400;font-size:94px;text-transform:uppercase;letter-spacing:.04em", eye: "This December", cap: "Based on true flights" },
+  { ...MOVIE, name: "cosmic", wall: `${Array.from({length:3},(_,i)=>`radial-gradient(rgba(255,255,255,${.5 - i * .12}) 1px, transparent 1.6px) ${i * 37}px ${i * 53}px/${90 + i * 40}px ${90 + i * 40}px`).join(", ")}, radial-gradient(ellipse at 70% 20%, #2b2f55, #0b0d1c 75%)`, title: "#f1e3b5", hl: "#c9a54e", hlInk: "#0b0d1c", hlFull: true, n1: "#f1ead6", n2: "#d8dbe8", tape1: "rgba(201,165,78,.7)", pp: "#e6e7ee", water: "#c3cbe3", land: "#f5f5fa", land2: "#e2e3ee",
+    h1: "font-family:'Cinzel';font-weight:900;font-size:68px;letter-spacing:.04em", eye: "Across the skies · 2026", cap: "The flight paths" },
+  { ...MOVIE, name: "noir comic", wall: `${halftone("rgba(255,255,255,.08)", 8)}, #121212`, title: "#ffffff", hl: "#b3141b", hlInk: "#fff", hlFull: true, n1: "#f2f2f2", n2: "#dcdcdc", tape1: "rgba(255,255,255,.45)", tape2: "rgba(179,20,27,.55)", pp: "#e3e3e3", rc: "#f4f4f4", water: "#cfcfcf", land: "#f6f6f6", land2: "#e4e4e4", cards: "border: 4px solid #000",
+    h1: "font-family:'Bangers';font-weight:400;font-size:98px;letter-spacing:.04em", eye: "Night edition · 2026", cap: "Meanwhile, over the coast…" },
+  { ...MOVIE, name: "vintage comic print", wall: `${halftone("rgba(190,60,60,.13)", 10)}, ${halftone("rgba(40,90,150,.10)", 13)}, #efe6d2`, hl: "#2c4a6e", hlInk: "#f6efdf", hlFull: true, n1: "#f8f2e3", n2: "#e9dcc2", tape1: "rgba(44,74,110,.3)", tape2: "rgba(170,60,50,.3)", pp: "#e8e2d2", rc: "#fbf7ec", water: "#cdd6d8", land: "#f8f3e6", land2: "#e9e1cd", cards: "border: 4px solid #2a2a2a",
+    h1: "font-family:'Bangers';font-weight:400;font-size:96px;letter-spacing:.03em", eye: "Vol. 1 · No. 14 · 2026", cap: "Our story so far" },
+  { ...MOVIE, name: "cinematic widescreen", wall: `linear-gradient(#000 0 28px, transparent 28px calc(100% - 28px), #000 calc(100% - 28px)), radial-gradient(ellipse at 50% 30%, #23262b, #0a0b0d 80%)`, title: "#f3f3f3", hl: "#e8e8e8", hlInk: "#0a0b0d", hlFull: true, n1: "#ececec", n2: "#d6d6d6", tape1: "rgba(255,255,255,.4)", pp: "#e2e2e2", rc: "#f3f3f3", water: "#c8ced4", land: "#f4f4f4", land2: "#e2e2e2",
+    h1: "font-family:'Inter Tight';font-weight:800;font-size:76px;letter-spacing:.08em;text-transform:uppercase", eye: "Experience it on the big screen", cap: "2.39 : 1" },
+  { ...MOVIE, name: "red carpet premiere", wall: `${grain}, radial-gradient(ellipse at 50% 10%, #5a1a22, #2a0b10 80%)`, title: "#f4e2b8", hl: "#caa45a", hlInk: "#2a0b10", hlFull: true, n1: "#f4ead2", n2: "#e3d4b6", tape1: "rgba(202,164,90,.75)", pp: "#ece6dc", rc: "#fbf6ec", water: "#d3cdc6", land: "#faf6ee", land2: "#ebe3d4", cards: "border: 6px solid #caa45a",
+    h1: "font-family:'Playfair Display';font-weight:900;font-size:80px", eye: "World premiere · Dec 20", cap: "Official selection" },
+  { ...MOVIE, name: "origin story", wall: `${grain}, linear-gradient(180deg, #6b5b4a, #2f2720)`, title: "#f1e6d2", hl: "#d8c3a0", hlInk: "#2f2720", hlFull: true, n1: "#efe4d0", n2: "#d9cbb2", tape1: "rgba(216,195,160,.6)", pp: "#e4ddd0", rc: "#f7f1e6", water: "#cdc6b9", land: "#f6f0e4", land2: "#e5dccb",
+    h1: "font-family:'Bebas Neue';font-weight:400;font-size:104px;letter-spacing:.04em", eye: "Every hero has a beginning", cap: "Where it all started" },
+  { ...MOVIE, name: "midnight premiere", wall: `${grain}, radial-gradient(ellipse at 50% 15%, #2e2a3d, #121019 80%)`, title: "#ece8f5", hl: "#8f86b3", hlInk: "#121019", hlFull: true, n1: "#ece8f5", n2: "#d7d2e6", tape1: "rgba(143,134,179,.6)", pp: "#e5e3ec", water: "#c9c6dc", land: "#f5f4f9", land2: "#e3e1ec",
+    h1: "font-family:'Anton';font-weight:400;font-size:92px;text-transform:uppercase;letter-spacing:.03em", eye: "Midnight showing · Dec 20", cap: "Based on true flights" },
+];
+const tm = /^#c(\d+)$/.exec(location.hash);
+const TH = { ...BASE, ...THEMES[(tm ? Math.min(20, Math.max(1, +tm[1])) : 1) - 1] };
+if (TH.deco) document.getElementById("pg").insertAdjacentHTML("afterbegin", `<div style="position:absolute;inset:0;overflow:hidden">${TH.deco}</div>`);
+{ const pg = document.getElementById("pg").style; Object.entries({ "--wall": TH.wall, "--title": TH.title, "--hl": TH.hl, "--hlInk": TH.hlInk || "#262a33", "--tape1": TH.tape1, "--tape2": TH.tape2, "--pp": TH.pp, "--rc": TH.rc }).forEach(([k, v]) => pg.setProperty(k, v)); }
+
+/* ---------- data, as of Dec 20, 2026 (posting day): every flight flown ---------- */
+const AP = { SEA:{lon:-122.309,lat:47.449,city:"Seattle"}, SFO:{lon:-122.375,lat:37.619,city:"San Francisco"}, SJC:{lon:-121.929,lat:37.363,city:"San José"}, DFW:{lon:-97.040,lat:32.899,city:"Dallas"} };
+const NAME = { DL:"Delta", UA:"United", WN:"Southwest", AS:"Alaska", F9:"Frontier", AA:"American" };
+const LINE = { DL:"#E3132C", UA:"#0B2A7A", WN:"#F5A800", AS:"#1FA0C0", F9:"#2E8B57", AA:"#0078D2" };
+const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
+const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air],i)=>{const [m,d]=md.split("-").map(Number);return{i,m:m-1,d,from,to,air,mi:miles(AP[from],AP[to]),key:[from,to].sort().join("-")};});
+const nf = n => Math.round(n).toLocaleString("en-US");
+const pad = n => String(n).padStart(2,"0");
+const TOTAL = fl.reduce((s,f)=>s+f.mi,0);
+const counts = Object.keys(NAME).map(c=>[c, fl.filter(f=>f.air===c).length]).sort((a,b)=>b[1]-a[1]);
+
+/* ---------- map legend: logo, count, and the line color it uses ---------- */
+document.getElementById("legend").innerHTML = counts.map(([c,n]) => `<div><span>${LOGO_PILL(c, 40, 118)}<span class="sw" style="background:${LINE[c]}"></span></span>×${n}</div>`).join("");
+
+/* ---------- sticky notes ---------- */
+const longest = fl.reduce((a,b) => b.mi > a.mi ? b : a);
+document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  <div class="note" style="top:200px;left:790px;width:250px;background:${TH.n1};transform:rotate(5deg)"><span class="pin" style="top:-12px;left:120px"></span><b>total</b><div>${fl.length} flights</div><div>${nf(TOTAL)} miles</div><div>6 airlines</div></div>
+  <div class="note" style="top:430px;left:650px;width:320px;background:${TH.n2};transform:rotate(3deg)"><span class="pin" style="top:-12px;left:150px;background:radial-gradient(circle at 35% 35%,#8ab4ff,#2b4c8c 60%)"></span><b>longest trip</b><div>${longest.from} → ${longest.to}</div><div>${nf(longest.mi)} mi each way</div></div>`);
+
+/* ---------- passport stamps ---------- */
+(function () {
+  const inks = ["#6b2fa0","#b3202a","#1d6b3a","#1f4fa3","#b8641a","#0e7c86"];
+  const items = fl.map(f => ({ f })).concat([{ total: true }]);
+  document.getElementById("passport").insertAdjacentHTML("beforeend", items.map((it, k) => {
+    const col = k % 3, row = Math.floor(k / 3);
+    const x = 14 + col * 178 + ((k * 37) % 26) - 13, y = 78 + row * 164 + ((k * 53) % 30) - 15, rot = ((k * 47) % 30) - 15;
+    const ink = it.total ? "#1f4fa3" : inks[k % inks.length], shape = it.total ? 0 : k % 3;
+    const box = shape === 0 ? "width:168px;height:168px;border-radius:50%;border:5px double" : shape === 1 ? "width:184px;height:132px;border-radius:8px;border:5px double" : "width:190px;height:136px;border-radius:50%;border:4px solid";
+    const body = it.total ? `<small>ENTRIES</small><b>${fl.length}</b><small>${nf(TOTAL)} MI</small>`
+      : `<small>ARRIVED</small><b>${it.f.to}</b><small>${pad(it.f.d)} ${MON[it.f.m]} 2026</small><small>${NAME[it.f.air].toUpperCase()}</small>`;
+    return `<div class="st" style="left:${x}px;top:${y}px;${box} ${ink};color:${ink};transform:rotate(${rot}deg)"><div>${body}</div></div>`;
+  }).join(""));
+})();
+
+/* ---------- receipt ---------- */
+(function () {
+  let h = 0, bars = ""; for (const ch of "flightlog2026") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (let i = 0; i < 60; i++) { h = (h * 1103515245 + 12345) >>> 0; bars += `<i style="display:inline-block;height:100%;margin-right:3px;background:#232323;width:${1 + (h >>> 28) % 4}px"></i>`; }
+  document.getElementById("receipt").innerHTML = `
+    <h2>FLIGHT LOG</h2><div class="c">2026 · ITEMIZED · TINGYUN</div><div class="hr"></div>
+    ${fl.map(f => `<div class="it"><span>${pad(f.m+1)}/${pad(f.d)}</span><span>${f.from}→${f.to}</span>${LOGO_PILL(f.air, 28, 76, "box-shadow:none")}<span>${nf(f.mi)}</span></div>`).join("")}
+    <div class="hr"></div><div class="tot"><span>TOTAL MI</span><span>${nf(TOTAL)}</span></div>
+    <div class="sub" style="margin-top:6px"><span>FLIGHTS</span><span>${fl.length}</span></div><div class="sub"><span>AIRLINES</span><span>6</span></div><div class="sub"><span>AIRPORTS</span><span>4</span></div>
+    <div class="bc">${bars}</div><div class="c" style="color:#232323">THANK YOU FOR FLYING</div>`;
+})();
+
+
+/* ---------- fun extras: doodles, a starburst sticker, handwritten notes on the map ---------- */
+const O = 'stroke="#262a33" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"';
+const face = (x,y,k=1) => `<g transform="translate(${x} ${y}) scale(${k})"><circle cx="-8" cy="0" r="3" fill="#262a33"/><circle cx="8" cy="0" r="3" fill="#262a33"/><path d="M-6 7 q6 6 12 0" fill="none" ${O} stroke-width="3"/><circle cx="-15" cy="7" r="4" fill="#ff9fb4"/><circle cx="15" cy="7" r="4" fill="#ff9fb4"/></g>`;
+const D = {
+  plane: `<svg viewBox="0 0 220 120"><path d="M20 70 q0 -26 40 -26 h90 q40 0 52 26 q-12 22 -52 22 h-90 q-40 0 -40 -22z" fill="#fff" ${O}/><path d="M40 46 l-14 -30 h22 l26 30z" fill="#ff8fb3" ${O}/><path d="M95 78 l-24 36 h26 l34 -36z" fill="#9fd3ff" ${O}/><circle cx="95" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/><circle cx="120" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/><circle cx="145" cy="62" r="7" fill="#9fd3ff" ${O} stroke-width="3"/>${face(178,66,.8)}<path d="M8 60 h-8 M10 74 h-10 M14 88 h-8" ${O} stroke-width="3" stroke-dasharray="2 6"/></svg>`,
+  cloud: `<svg viewBox="0 0 160 100"><path d="M30 80 a24 24 0 0 1 4 -46 a32 32 0 0 1 60 -10 a26 26 0 0 1 40 26 a20 20 0 0 1 -6 30z" fill="#bfe3ff" ${O}/>${face(80,56)}</svg>`,
+  star: `<svg viewBox="0 0 60 60"><path d="M30 6 l7 16 17 2 -13 11 4 17 -15 -9 -15 9 4 -17 -13 -11 17 -2z" fill="#ffd34d" ${O} stroke-width="3"/></svg>`,
+  heart: `<svg viewBox="0 0 60 56"><path d="M30 50 C12 38 4 28 4 18 C4 9 11 4 18 4 C24 4 28 8 30 12 C32 8 36 4 42 4 C49 4 56 9 56 18 C56 28 48 38 30 50 Z" fill="#ff6b8b" ${O} stroke-width="3"/></svg>`,
+  suitcase: `<svg viewBox="0 0 120 150"><rect x="20" y="34" width="80" height="100" rx="14" fill="#ffd34d" ${O}/><path d="M44 34 v-16 h32 v16" fill="none" ${O}/><circle cx="38" cy="140" r="7" fill="#262a33"/><circle cx="82" cy="140" r="7" fill="#262a33"/>${face(60,84)}</svg>`,
+};
+const place = (k, x, y, w, r = 0) => `<div class="doodle" style="left:${x}px;top:${y}px;width:${w}px;transform:rotate(${r}deg)">${D[k]}</div>`;
+let pts = "", N = 18; for (let k = 0; k < N * 2; k++) { const a = k / (N * 2) * Math.PI * 2, rr = k % 2 ? 62 : 80; pts += `${(90 + Math.cos(a) * rr).toFixed(1)},${(90 + Math.sin(a) * rr).toFixed(1)} `; }
+document.getElementById("pg").insertAdjacentHTML("beforeend",
+  place("plane", 640, 70, 170, -8) + place("star", 26, 150, 40, -10) + place("star", 610, 190, 34, 20) + place("cloud", 905, 70, 130, 6) +
+  place("heart", 985, 640, 48, 14) + place("suitcase", 520, 1800, 82, -10) + place("star", 1010, 1870, 40) +
+  `<div class="burst" style="left:925px;top:925px;width:150px;transform:rotate(12deg)"><svg viewBox="0 0 180 180"><polygon points="${pts}" fill="#ff6b8b" stroke="#262a33" stroke-width="4" stroke-linejoin="round"/><text x="90" y="86" text-anchor="middle" font-family="Permanent Marker" font-size="52" fill="#fff">14</text><text x="90" y="118" text-anchor="middle" font-family="Permanent Marker" font-size="26" fill="#fff">flights!</text></svg></div>`);
+
+/* ---------- lively stickers ---------- */
+document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  <div class="burst" style="left:44px;top:300px;width:128px;transform:rotate(-14deg)"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="${TH.hl}" stroke="#262a33" stroke-width="4"/><circle cx="60" cy="60" r="44" fill="none" stroke="#262a33" stroke-width="2" stroke-dasharray="3 5"/><text x="60" y="56" text-anchor="middle" font-family="Permanent Marker" font-size="22" fill="${TH.hlInk || "#262a33"}">wheels</text><text x="60" y="82" text-anchor="middle" font-family="Permanent Marker" font-size="24" fill="${TH.hlInk || "#262a33"}">up!</text></svg></div>
+  <div class="burst" style="left:${TH.mirror ? 640 : 330}px;top:922px;transform:rotate(${TH.mirror ? 4 : -5}deg);background:#fff;border:3px solid #262a33;border-radius:999px;padding:8px 20px 6px;font:700 30px Caveat;color:#262a33;box-shadow:4px 4px 0 #262a33">window seat ♡</div>
+  ${[[1000,560],[40,1090],[590,1240],[1040,1350],[560,1660]].map(([x,y],i) => `<svg style="position:absolute;left:${x}px;top:${y}px;width:${22 + i % 3 * 8}px;z-index:10" viewBox="0 0 20 20"><path d="M10 0 L12 8 L20 10 L12 12 L10 20 L8 12 L0 10 L8 8Z" fill="${["#ffd34d","#ff8fc8","#7cc8ff"][i % 3]}" stroke="#262a33" stroke-width="1.2"/></svg>`).join("")}`);
+
+/* ---------- TV / blockbuster touches ---------- */
+{
+  const css = document.createElement("style");
+  css.textContent = `h1 { ${TH.h1 || ""} } h1 span { font-family: inherit !important; font-size: .78em !important; letter-spacing: .02em; } .doodle { filter: saturate(${TH.sat ?? 1}); }
+    .cap { position: absolute; top: 530px; left: 30px; z-index: 5; font: 700 22px 'Playfair Display'; font-style: italic; color: #fff; background: rgba(15,15,18,.72); padding: 6px 14px; border-radius: 4px; }
+    .credits { font-family: 'Inter Tight'; text-transform: uppercase; text-align: center; line-height: 1.25; }
+    .credits .big { font: 400 46px/1 'Bebas Neue'; letter-spacing: .06em; margin: 6px 0; }
+    .credits small { display: block; font-size: 15px; letter-spacing: .12em; }`;
+  document.head.appendChild(css);
+  const eye = document.querySelector("h1 small"); if (eye && TH.eye) eye.textContent = TH.eye;
+  if (TH.cap) document.querySelector(".mapcard").insertAdjacentHTML("beforeend", `<span class="cap">${TH.cap}</span>`);
+  const total = [...document.querySelectorAll(".note")].find(n => /total/i.test(n.textContent));
+  if (total && TH.kind === "movie") total.innerHTML = `<span class="pin" style="top:-12px;left:110px"></span><div class="credits"><small>A Tingyun production</small><div class="big">14 flights</div><small>6 airlines · ${nf(TOTAL)} mi</small></div>`;
+  if (total && TH.kind === "tv") total.innerHTML = `<span class="pin" style="top:-12px;left:110px"></span><b>Season 2026</b><div>14 episodes</div><div>${nf(TOTAL)} miles</div><div>6 airlines</div>`;
+  const bursts = [...document.querySelectorAll(".burst")];
+  const wheels = bursts.find(b => /wheels/.test(b.textContent)), fourteen = bursts.find(b => /flights!/.test(b.textContent));
+  const label = (txt, rot) => `<div style="font:400 30px/1 'Bebas Neue';letter-spacing:.08em;color:${TH.hlInk};background:${TH.hl};padding:10px 14px 6px;border:3px solid ${TH.hlInk};outline:3px solid ${TH.hl};transform:rotate(${rot}deg);text-align:center;white-space:nowrap">${txt}</div>`;
+  if (wheels) { wheels.style.width = "auto"; wheels.innerHTML = label(TH.kind === "tv" ? "New season" : "Now showing", -8); }
+  if (fourteen) { fourteen.style.width = "auto"; fourteen.innerHTML = label(TH.kind === "tv" ? "Season finale" : "Premieres Dec 20", 8); fourteen.style.left = (TH.mirror ? 300 : 1080 - fourteen.offsetWidth - 22) + "px"; }
+  if (TH.doodles === false) { document.querySelectorAll(".doodle").forEach(d => d.style.display = "none"); document.querySelectorAll('svg[style*="z-index:10"]').forEach(s => s.style.display = "none"); }
+  else document.querySelectorAll('svg[style*="z-index:10"]').forEach(s => s.style.filter = `saturate(${TH.sat ?? 1})`);
+}
+
+/* ---------- mirrored layout: receipt on the left, passport on the right ---------- */
+if (TH.hlFull) { const sp = document.querySelector("h1 span"); sp.style.background = TH.hl; sp.style.color = TH.hlInk || "#1d1d1f"; sp.style.padding = "6px 18px 2px"; sp.style.borderRadius = "6px"; }
+if (TH.cards) document.querySelectorAll(".mapcard, .passport, #receipt").forEach(el => el.style.cssText += ";" + TH.cards);
+if (TH.mirror) {
+  const pp = document.querySelector(".passport"), rc = document.getElementById("receipt"), tapes = document.querySelectorAll(".tape"), burst = document.querySelector(".burst");
+  pp.style.left = "486px"; pp.style.transform = "rotate(3deg)";
+  rc.style.left = "30px"; rc.style.transform = "rotate(-2.5deg)";
+  tapes[0].style.left = "660px"; tapes[1].style.left = "170px";
+  if (burst) { burst.style.left = "395px"; burst.style.transform = "rotate(-12deg)"; }
+}
+
+/* ---------- map: real coastlines, one line per flight in its airline's color ---------- */
+document.fonts.ready.then(() => {
+  const W = 964, H = 560, svg = d3.select("#map").attr("viewBox", `0 0 ${W} ${H}`);
+  const proj = d3.geoConicConformal().parallels([33,45]).rotate([110,0])
+    .fitExtent([[14,14],[W-14,H-14]], { type:"MultiPoint", coordinates:[[-126.5,31.3],[-94,31.3],[-94,49.2],[-126.5,49.2]] });
+  const path = d3.geoPath(proj);
+  svg.append("rect").attr("width", W).attr("height", H).attr("fill", TH.water);
+  svg.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path")
+    .attr("d", path).attr("fill", d => d.id === "840" ? TH.land : TH.land2).attr("stroke", "#c9c4b4").attr("stroke-width", 1);
+  svg.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (a,b) => a !== b))).attr("fill","none").attr("stroke","#d8d2c0").attr("stroke-width",1.3);
+  const pt = c => proj([AP[c].lon, AP[c].lat]);
+  const ROUTES = [{ key:"SEA-SJC", a:"SEA", b:"SJC", side:-1, k:.2 }, { key:"SEA-SFO", a:"SEA", b:"SFO", side:1, k:.2 }, { key:"DFW-SFO", a:"SFO", b:"DFW", side:-1, k:.22 }];
+  ROUTES.forEach(r => {
+    const rf = fl.filter(f => f.key === r.key), A = pt(r.a), B = pt(r.b), dx = B[0]-A[0], dy = B[1]-A[1], len = Math.hypot(dx, dy);
+    const nx = -dy/len*r.side, ny = dx/len*r.side;
+    rf.forEach((f, i) => {
+      const kk = rf.length > 1 ? r.k * (.45 + 1.1 * i / (rf.length - 1)) : r.k;
+      const d = `M${A} Q${(A[0]+B[0])/2 + nx*kk*len},${(A[1]+B[1])/2 + ny*kk*len} ${B}`;
+      svg.append("path").attr("d", d).attr("fill","none").attr("stroke","#fff").attr("stroke-width",8).attr("stroke-linecap","round");
+      svg.append("path").attr("d", d).attr("fill","none").attr("stroke", LINE[f.air]).attr("stroke-width",4.5).attr("stroke-linecap","round");
+    });
+  });
+  const L = { SEA:[16,-14,"start"], SFO:[-16,-6,"end"], SJC:[16,28,"start"], DFW:[16,6,"start"] };
+  Object.entries(AP).forEach(([c,a]) => {
+    const [x,y] = pt(c);
+    svg.append("circle").attr("cx",x).attr("cy",y).attr("r",10).attr("fill","#fff").attr("stroke","#262a33").attr("stroke-width",4);
+    const t = svg.append("text").attr("x", x+L[c][0]).attr("y", y+L[c][1]).attr("text-anchor", L[c][2]).attr("fill","#262a33").attr("paint-order","stroke").attr("stroke","rgba(255,255,255,.85)").attr("stroke-width",5);
+    t.append("tspan").attr("font-family","Caveat").attr("font-weight",700).attr("font-size",48).text(c);
+    t.append("tspan").attr("x", x+L[c][0]).attr("dy", 26).attr("font-family","Caveat").attr("font-size",26).text(a.city);
+  });
+  // handwritten notes with arrows
+  const note = (x, y, txt, ax, ay, rot = -4) => {
+    svg.append("text").attr("x", x).attr("y", y).attr("transform", `rotate(${rot} ${x} ${y})`).attr("font-family", "Caveat").attr("font-weight", 700).attr("font-size", 38).attr("fill", "#d63a3a").text(txt);
+    svg.append("path").attr("d", `M${x - 10},${y - 10} Q${(x + ax) / 2 - 20},${Math.min(y, ay) - 40} ${ax},${ay}`).attr("fill", "none").attr("stroke", "#d63a3a").attr("stroke-width", 3.5).attr("stroke-linecap", "round").attr("marker-end", "url(#ah)");
+  };
+  const mk = svg.append("defs").append("marker").attr("id", "ah").attr("viewBox", "0 0 10 10").attr("refX", 8).attr("refY", 5).attr("markerWidth", 7).attr("markerHeight", 7).attr("orient", "auto");
+  mk.append("path").attr("d", "M0,0 L10,5 L0,10 z").attr("fill", "#d63a3a");
+  const sea = pt("SEA"), sjc = pt("SJC"), dfw = pt("DFW"), sfo = pt("SFO");
+  note(sea[0] + 70, sea[1] + 165, "8× SEA ⇄ SJC!", sea[0] + 52, (sea[1] + sjc[1]) / 2 - 30, -6);
+  { const mx = (sfo[0] + dfw[0]) / 2, my = (sfo[1] + dfw[1]) / 2; svg.append("text").attr("x", mx - 150).attr("y", my + 110).attr("transform", `rotate(-3 ${mx - 150} ${my + 110})`).attr("font-family", "Caveat").attr("font-weight", 700).attr("font-size", 38).attr("fill", "#d63a3a").text("the long one: Dallas!");
+    svg.append("path").attr("d", `M${mx - 40},${my + 78} Q${mx - 30},${my + 50} ${mx - 10},${my + 22}`).attr("fill", "none").attr("stroke", "#d63a3a").attr("stroke-width", 3.5).attr("stroke-linecap", "round").attr("marker-end", "url(#ah)"); }
+});
+</script>
+</body>
+</html>
