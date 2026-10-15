@@ -4,6 +4,7 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.
 - `pictures/` — three Instagram Story pictures (1080×1920): scrapbook, minimal, boarding-pass stack
+- `pictures/final/` — the chosen designs, rendered as of Dec 20, 2026 (posting day, all 14 flights flown); regenerate with `pictures/themes.html#t15-final` etc.
 - `pictures/themed/` — 20 Story pictures with a real US map, the three routes labeled with their airlines, an airline row and the flight list (`2026-flights-map-01.png` … `20`); regenerate with `pictures/themes.html#t1`…`#t20`
 - `pictures/more/` — 20 more Story pictures (`2026-flights-01.png` … `20`), overview in `00-overview.png`; regenerate with `pictures/variants.html#v1`…`#v20`
 - `flight-story-2026.png` — one-picture Instagram Story (1080×1920), made from `story-picture.html`

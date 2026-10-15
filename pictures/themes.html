@@ -58,7 +58,8 @@ const AL = {
 };
 const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const today = new Date(); today.setHours(0,0,0,0);
+// "#t15-final" renders as of Dec 20, 2026 (the planned posting day), when every flight has been flown.
+const today = /-final$/.test(location.hash) ? new Date(2026, 11, 20) : (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
 function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
 const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{m:m-1,d,from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to]),key:[from,to].sort().join("-")};});
 const TOTAL = Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US");
@@ -115,7 +116,7 @@ T.push({ name:"departures", r:["#16181d","#2f80d1","#e0a020"], vars:{ ...mini("#
   css:`.row{background:#fff;border-radius:10px;margin:4px 0;height:54px;padding:0 12px}.row .t{font-size:15px}`, title:`Departures <em style="color:#16181d">2026</em>` });
 
 /* ---------- render ---------- */
-const m = /^#t(\d+)$/.exec(location.hash);
+const m = /^#t(\d+)(-final)?$/.exec(location.hash);
 const th = T[(m ? Math.min(T.length, Math.max(1, +m[1])) : 1) - 1];
 const vars = Object.entries(th.vars).map(([k,v]) => `${k}:${v}`).join(";");
 const routeColor = key => th.r[ROUTES.find(r => r.key === key).ci];
@@ -164,7 +165,7 @@ ROUTES.forEach(r => {
   const airs = {}; r.fl.forEach(f => airs[f.air] = (airs[f.air] || 0) + 1);
   const el = document.createElement("div");
   el.className = "call"; el.style.setProperty("--rc", col);
-  el.innerHTML = `<b>${r.label}</b><small>${r.fl.length} flights · ${flown} flown${booked ? ` · ${booked} booked` : ""}</small><div class="bs">${Object.entries(airs).sort((a,b)=>b[1]-a[1]).map(([c,n]) => badge(c, n > 1 ? n : 0)).join("")}</div>`;
+  el.innerHTML = `<b>${r.label}</b><small>${r.fl.length} ${r.fl.length === 1 ? "flight" : "flights"}${booked ? ` · ${flown} flown · ${booked} booked` : ""}</small><div class="bs">${Object.entries(airs).sort((a,b)=>b[1]-a[1]).map(([c,n]) => badge(c, n > 1 ? n : 0)).join("")}</div>`;
   box.appendChild(el);
   const w = el.offsetWidth, h = el.offsetHeight;
   let x, y, ax, ay;
