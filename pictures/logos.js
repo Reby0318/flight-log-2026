@@ -13,6 +13,11 @@
     AA: () => LOGO_BASE + "AA-mark.svg", // official wordmark + drawn flight symbol
     UA: () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(united),
   };
-  window.LOGO_PILL = (code, h = 40, w = 128, extra = "") =>
-    `<span class="logo" style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);flex:none;position:relative;vertical-align:middle;padding:${Math.round(h * .16)}px ${Math.round(h * .22)}px;box-sizing:border-box;${extra}"><img src="${LOGO_SRC[code]()}" alt="${code}" style="position:absolute;top:${Math.round(h * .16)}px;bottom:${Math.round(h * .16)}px;left:${Math.round(h * .22)}px;right:${Math.round(h * .22)}px;width:calc(100% - ${2 * Math.round(h * .22)}px);height:calc(100% - ${2 * Math.round(h * .16)}px);object-fit:contain;display:block"></span>`;
+  // Optical balance: share of the badge each logo may use (width, height). Wide wordmarks get less, Alaska/American more.
+  window.LOGO_FIT = { DL: [.64, .6], UA: [.6, .55], WN: [.64, .6], F9: [.58, .62], AS: [.76, .84], AA: [.9, .9] };
+  window.LOGO_PILL = (code, h = 40, w = 128, extra = "") => {
+    const [fw, fh] = LOGO_FIT[code] || [.8, .7];
+    const ix = Math.round(w * (1 - fw) / 2), iy = Math.round(h * (1 - fh) / 2);
+    return `<span class="logo" style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);flex:none;position:relative;vertical-align:middle;box-sizing:border-box;${extra}"><img src="${LOGO_SRC[code]()}" alt="${code}" style="position:absolute;top:${iy}px;bottom:${iy}px;left:${ix}px;right:${ix}px;width:calc(100% - ${2 * ix}px);height:calc(100% - ${2 * iy}px);object-fit:contain;display:block"></span>`;
+  };
 })();
