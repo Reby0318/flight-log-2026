@@ -223,6 +223,16 @@ document.getElementById("pg").insertAdjacentHTML("beforeend", `
   else document.querySelectorAll('svg[style*="z-index:10"]').forEach(s => s.style.filter = `saturate(${TH.sat ?? 1})`);
 }
 
+/* ---------- simple mode: only the essentials ---------- */
+{
+  const css = document.createElement("style");
+  css.textContent = `.doodle, .burst, .cap, svg[style*="z-index:10"] { display: none !important; }
+    #map [fill="#d63a3a"], #map [stroke="#d63a3a"] { display: none; }`;
+  document.head.appendChild(css);
+  document.querySelectorAll(".note").forEach(n => { if (/longest/i.test(n.textContent)) n.remove(); });
+  document.querySelectorAll("#pg > svg").forEach(e => e.remove());
+}
+
 /* ---------- mirrored layout: receipt on the left, passport on the right ---------- */
 if (TH.hlFull) { const sp = document.querySelector("h1 span"); sp.style.background = TH.hl; sp.style.color = TH.hlInk || "#1d1d1f"; sp.style.padding = "6px 18px 2px"; sp.style.borderRadius = "6px"; }
 if (TH.cards) document.querySelectorAll(".mapcard, .passport, #receipt").forEach(el => el.style.cssText += ";" + TH.cards);

@@ -4,6 +4,7 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.
 - `pictures/` — three Instagram Story pictures (1080×1920): scrapbook, minimal, boarding-pass stack
+- `pictures/simple/` — the same 20 looks, simplified to the essentials (title, map + logos, one note, passport, receipt)
 - `pictures/cinema/` — the collage in 20 restrained TV-series and superhero-blockbuster looks (`pictures/cinema.html#c1`…`#c20`)
 - `pictures/tv/` — "Season 2026" TV-series pictures: title card, map on a TV screen, episode guide (one flight per episode); 10 looks incl. cartoon sci-fi portal styles (`pictures/tv.html#s1`…`#s10`)
 - `pictures/collages/` — 20 looks of the collage (easy, lively, luxury, anime, fun, beautiful, attractive, quality, interesting); overview in `00-overview.png`; regenerate with `pictures/collages.html#c1`…`#c20`
@@ -17,4 +18,4 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 14 flights · 4 airports (SEA, SFO, SJC, DFW) · 6 airlines (Delta, United, Southwest, Alaska, Frontier, American)
 
-Airline logos: Delta, Southwest, Alaska, Frontier and American are the official SVGs from Wikimedia Commons (public domain, `pictures/logos-official/`). American uses the official wordmark plus a drawn flight symbol (`AA-mark.svg`). United has no current logo on Commons, so it's a drawn globe + wordmark (`pictures/logos.js`). Maps use us-atlas and world-atlas outlines.
+Airline logos: Delta, Southwest, Alaska, Frontier and American are the official SVGs from Wikimedia Commons (public domain, `pictures/logos-official/`). American uses the official wordmark plus a drawn look-alike of its flight symbol (`AA-mark.svg`). United has no current logo on Commons, so it's a drawn globe + wordmark (`pictures/logos.js`). Maps use us-atlas and world-atlas outlines.

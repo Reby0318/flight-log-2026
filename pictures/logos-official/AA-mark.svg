@@ -1,12 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 316 48">
-<!-- Drawn look-alike of the American Airlines flight symbol + the official 2013 wordmark (Wikimedia Commons, public domain) -->
-<g>
-  <path d="M2 46 C8 28 20 12 38 2 L44 2 C30 14 22 30 18 46 Z" fill="#0B3D91"/>
-  <path d="M18 46 C22 30 30 16 44 2 L52 2 C40 16 34 30 34 46 Z" fill="#36A9E1"/>
-  <path d="M34 46 C36 34 44 22 58 14 L58 22 C50 28 46 36 46 46 Z" fill="#C30019"/>
-  <path d="M44 2 L58 2 L58 14 C54 10 50 6 44 2 Z" fill="#9DA6AB"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 338 88">
+<!-- Official American Airlines 2013 wordmark (Wikimedia Commons, public domain) + a drawn look-alike of the flight symbol -->
+<defs>
+  <linearGradient id="aaB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#36B4EC"/><stop offset="1" stop-color="#0B5CAB"/></linearGradient>
+  <linearGradient id="aaS" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#d7dbde"/><stop offset="1" stop-color="#9aa3a9"/></linearGradient>
+  <linearGradient id="aaR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E8303A"/><stop offset="1" stop-color="#B0161F"/></linearGradient>
+</defs>
+<g transform="translate(254 0)">
+  <path d="M9 0 H25 Q28 0 30 3 L56 41 H40 L7 4 Q6 0 9 0 Z" fill="url(#aaB)"/>
+  <path d="M28 47 Q46 37 66 41 Q72 42 70 47 Q55 45 44 54 Q37 50 28 47 Z" fill="url(#aaS)"/>
+  <path d="M44 54 Q55 45 70 47 Q63 53 65 60 L82 84 Q83 87 79 87 H63 Q60 87 58 84 Z" fill="url(#aaR)"/>
+  <path d="M44 54 Q55 45 70 47 Q60 50 57 58 Z" fill="#7E0F16" opacity=".5"/>
 </g>
-<svg x="70" y="11" width="244.9" height="24.391" viewBox="0 0 244.9 24.391" overflow="hidden">
+<svg x="0" y="36" width="250" height="24.9" viewBox="0 0 244.9 24.391" overflow="hidden">
 <defs>
 <clipPath id="a" clipPathUnits="userSpaceOnUse">
 <path d="m63.943 200.82h32.252v20.583h-32.252v-20.583z"/>
