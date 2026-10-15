@@ -219,6 +219,7 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .modal .box .g b { display: block; font: 800 30px var(--display); color: #e8a33a; }
 .modal .box button { justify-self: center; font: 700 14px var(--body); background: #e8a33a; color: #1d2b4a; border: 0; border-radius: 99px; padding: 10px 20px; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .pop, .wiggle, .shake, .tcard.shine::after, .rain, .modal .box { animation: none !important; } }
+@media (max-width: 600px) { .board .cell.next { grid-column: 1 / -1; } }
 </style>
 
 <div class="wrap">
@@ -456,7 +457,7 @@ function renderPilot() {
   const cur = LEVELS[li], nxt = LEVELS[li + 1];
   const pct = nxt ? (flownMi - cur[1]) / (nxt[1] - cur[1]) * 100 : 100;
   document.getElementById("pilot").innerHTML = `
-    <div class="tag">Pilot profile · ${new Date().getFullYear() > 2026 ? "2026 season" : "season in progress"}</div>
+    <div class="tag">Pilot profile · ${FLIGHTS.some(f => f.up) ? "season in progress" : "season complete"}</div>
     <div class="lvl">${cur[0]} <small>LVL ${li + 1}</small></div>
     <div class="xp"><i id="xpbar"></i></div>
     <div class="xpl"><span>${fmt(flownMi)} XP (miles flown)</span><span>${nxt ? `${fmt(nxt[1] - flownMi)} to ${nxt[0]}` : "max level"}</span></div>
@@ -541,7 +542,7 @@ function renderScore() {
   }).join("");
 })();
 (function routes() {
-  const R = {}; FLIGHTS.forEach(f => { const k = [f.from, f.to].sort().join(" ⇄ "); (R[k] = R[k] || []).push(f); });
+  const R = {}; FLIGHTS.forEach(f => { const key = [f.from, f.to].sort().join("-"); const k = ({ "DFW-SFO": "SFO ⇄ DFW" })[key] || key.replace("-", " ⇄ "); (R[k] = R[k] || []).push(f); });
   document.getElementById("routes").innerHTML = Object.entries(R).sort((x, y) => y[1].length - x[1].length).map(([k, fs]) => {
     const flown = fs.filter(f => !f.up).length, stars = flown >= 5 ? 3 : flown >= 3 ? 2 : flown >= 1 ? 1 : 0;
     const nextNeed = stars === 3 ? null : [1, 3, 5][stars];
