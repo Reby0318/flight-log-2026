@@ -276,6 +276,40 @@ if (FX.has("t")) {
   </div>`);
 }
 
+/* ---------- u = Americana: license plate, interstate shield, embroidered state patches ---------- */
+if (FX.has("u")) {
+  const NAVY = "#1f3a5f", RED = "#9e2a2b", CREAM = "#f4ecd8";
+  const patch = (id, fill, ink, top, bot, icon) => `<svg viewBox="0 0 140 140" style="width:100%;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
+    <defs><path id="${id}t" d="M26 70 A44 44 0 0 1 114 70"/><path id="${id}b" d="M22 70 A48 48 0 0 0 118 70"/></defs>
+    <circle cx="70" cy="70" r="66" fill="${ink}"/><circle cx="70" cy="70" r="66" fill="none" stroke="${fill}" stroke-width="6" stroke-dasharray="1.5 2.5" opacity=".7"/>
+    <circle cx="70" cy="70" r="58" fill="${fill}"/><circle cx="70" cy="70" r="40" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="3 3"/>
+    <text font-family="Anton" font-size="15" letter-spacing="2" fill="${ink}"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${top}</textPath></text>
+    <text font-family="Anton" font-size="12" letter-spacing="2" fill="${ink}" dy="11"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">${bot}</textPath></text>
+    <g transform="translate(70 72)">${icon(ink)}</g></svg>`;
+  const tree = c => `<path d="M0 -26 L14 -6 H6 L18 10 H5 V20 H-5 V10 H-18 L-6 -6 H-14 Z" fill="${c}"/>`;
+  const sun = c => `<circle r="11" fill="${c}"/>${Array.from({length: 12}, (_, k) => `<rect x="-1.5" y="-24" width="3" height="8" fill="${c}" transform="rotate(${k * 30})"/>`).join("")}<rect x="-22" y="14" width="44" height="3" fill="${c}"/>`;
+  const star = c => `<path d="M0 -24 L7 -7 L25 -7 L10 4 L16 22 L0 11 L-16 22 L-10 4 L-25 -7 L-7 -7 Z" fill="${c}"/>`;
+  let screws = `<circle cx="30" cy="22" r="5" fill="#b9b2a0"/><circle cx="250" cy="22" r="5" fill="#b9b2a0"/>`;
+  document.getElementById("pg").insertAdjacentHTML("beforeend", `
+    <div style="position:absolute;top:26px;right:34px;width:280px;transform:rotate(4deg);z-index:9;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3))">
+      <svg viewBox="0 0 280 130" style="width:100%"><rect x="2" y="2" width="276" height="126" rx="14" fill="${CREAM}" stroke="${NAVY}" stroke-width="4"/>
+        <rect x="10" y="10" width="260" height="110" rx="9" fill="none" stroke="${NAVY}" stroke-width="1.5" opacity=".5"/>${screws}
+        <text x="140" y="34" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="26" fill="${RED}">Pacific Coast</text>
+        <text x="140" y="96" text-anchor="middle" font-family="Bebas Neue" font-size="68" letter-spacing="6" fill="${NAVY}">FLY·2026</text>
+        <text x="140" y="117" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="11" letter-spacing="4" fill="${NAVY}">SEASON 2026 · 14 FLIGHTS</text></svg></div>
+    <div style="position:absolute;top:690px;left:76px;width:116px;transform:rotate(-6deg);z-index:9;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
+      <svg viewBox="0 0 120 130" style="width:100%"><path d="M8 14 Q60 -4 112 14 Q116 70 60 126 Q4 70 8 14 Z" fill="#fff"/><path d="M14 18 Q60 3 106 18 L105 38 H15 Z" fill="${RED}"/><path d="M15 42 H105 Q104 82 60 118 Q16 82 15 42 Z" fill="${NAVY}"/>
+        <text x="60" y="33" text-anchor="middle" font-family="Anton" font-size="13" letter-spacing="1.5" fill="#fff">FLIGHTS</text>
+        <text x="60" y="92" text-anchor="middle" font-family="Anton" font-size="46" fill="#fff">14</text></svg></div>
+    <div style="position:absolute;top:928px;left:40px;width:118px;transform:rotate(-8deg);z-index:9">${patch("wa", NAVY, CREAM, "WASHINGTON", "EVERGREEN STATE", tree)}</div>
+    <div style="position:absolute;top:944px;left:168px;width:118px;transform:rotate(5deg);z-index:9">${patch("ca", CREAM, RED, "CALIFORNIA", "GOLDEN STATE", sun)}</div>
+    <div style="position:absolute;top:924px;left:296px;width:118px;transform:rotate(-4deg);z-index:9">${patch("tx", RED, CREAM, "TEXAS", "LONE STAR STATE", star)}</div>`);
+  // the plate takes the top-right corner, so the season-pass ticket moves down a little
+  const tk = [...document.querySelectorAll("#pg > div")].find(d => /SEASON PASS/.test(d.textContent) && d.style.top === "150px");
+  if (tk) { tk.style.top = "196px"; tk.style.left = "700px"; }
+  const eyeU = document.querySelector("h1 small"); if (eyeU) eyeU.textContent = "Season 2026 · Coast to coast";
+}
+
 /* ---------- mirrored layout: receipt on the left, passport on the right ---------- */
 if (TH.hlFull) { const sp = document.querySelector("h1 span"); sp.style.background = TH.hl; sp.style.color = TH.hlInk || "#1d1d1f"; sp.style.padding = "6px 18px 2px"; sp.style.borderRadius = "6px"; }
 if (TH.cards) document.querySelectorAll(".mapcard, .passport, #receipt").forEach(el => el.style.cssText += ";" + TH.cards);
