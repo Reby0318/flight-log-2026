@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}</style>
 <title>2026 in the Air</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,6 +99,8 @@ svg.focus .arc.on { opacity: 1; stroke-width: 3.5; }
 .pass .date small { font-size: 11px; letter-spacing: .1em; color: var(--muted); }
 .route { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .03em; line-height: 1; display: flex; align-items: center; gap: 8px; }
 .route svg { width: 18px; height: 18px; flex: none; }
+.al { display: inline-grid; place-items: center; width: 34px; height: 24px; border-radius: 5px; font: 500 12px var(--mono); color: #fff; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.route .al { margin-right: 4px; }
 .meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .meta code { font-family: var(--mono); font-size: 12px; color: var(--ink); }
 .note { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
@@ -176,6 +179,16 @@ const FLIGHTS = [
   { d: "2026-12-01", from: "SEA", to: "SJC", air: "Delta", no: "DL 3736", t: "8:30 AM → 10:53 AM" },
   { d: "2026-12-19", from: "SJC", to: "SEA", air: "Southwest", no: "WN 3914", t: "9:45 PM → 12:05 AM" },
 ];
+// Airline badges: IATA code on each carrier's brand colors (drawn, not official logos).
+const AL = {
+  Delta: { c: "DL", bg: "#C8102E" },
+  United: { c: "UA", bg: "#0033A0" },
+  Southwest: { c: "WN", bg: "linear-gradient(#304CB2 0 66%, #FFBF27 66% 83%, #C60C30 83%)" },
+  Alaska: { c: "AS", bg: "linear-gradient(#01426A 0 76%, #48A9C5 76%)" },
+  Frontier: { c: "F9", bg: "#00764F" },
+  American: { c: "AA", bg: "linear-gradient(#0078D2 0 76%, #C30019 76%)" },
+};
+const badge = name => `<span class="al" style="background:${AL[name].bg}" title="${name}">${AL[name].c}</span>`;
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -298,7 +311,7 @@ function renderList() {
     <article class="pass" tabindex="0" data-i="${f.i}" aria-label="${MONTHS[f.date.getMonth()]} ${f.date.getDate()}, ${AIRPORTS[f.from].city} to ${AIRPORTS[f.to].city}">
       <div class="date"><small>${MONTHS[f.date.getMonth()].toUpperCase()}</small><b>${f.date.getDate()}</b></div>
       <div style="min-width:0">
-        <div class="route">${f.from} ${plane} ${f.to}</div>
+        <div class="route">${badge(f.air)}${f.from} ${plane} ${f.to}</div>
         <div class="meta">${f.air}${f.no ? ` · <code>${f.no}</code>` : ""}${f.t ? ` · ${f.t}` : ""} · ${fmt(f.mi)} mi</div>
         ${f.note ? `<div class="note">${f.note}</div>` : ""}
       </div>

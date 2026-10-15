@@ -2,86 +2,404 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>2026 in the Air — Story</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}</style>
+<title>2026 Flight Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Instagram Story canvas: 1080×1920. Title, four stats, route map, compact flight list. */
-:root { --bg: #0e1524; --land: #18233a; --line: #2a3752; --ink: #eef2f8; --muted: #8e9bb5; --flown: #7fa3e8; --up: #f2a93b;
-  --display: "Big Shoulders Display", Impact, sans-serif; --mono: "IBM Plex Mono", Menlo, monospace; }
-* { box-sizing: border-box; margin: 0; }
-html, body { width: 1080px; height: 1920px; background: var(--bg); color: var(--ink); overflow: hidden; }
-.story { width: 1080px; height: 1920px; padding: 120px 80px 100px; display: flex; flex-direction: column; gap: 44px; }
-.eyebrow { font-family: var(--mono); font-size: 28px; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
-h1 { font-family: var(--display); font-weight: 800; font-size: 190px; line-height: .86; text-transform: uppercase; margin-top: 14px; }
-h1 span { color: var(--up); display: block; }
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid var(--line); border-bottom: 2px solid var(--line); }
-.stat { padding: 22px 0; text-align: center; }
-.stat + .stat { border-left: 2px solid var(--line); }
-.stat b { display: block; font-family: var(--display); font-weight: 800; font-size: 84px; line-height: 1; font-variant-numeric: tabular-nums; }
-.stat small { font-family: var(--mono); font-size: 22px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
-svg { width: 920px; height: 725px; display: block; }
-.legend { display: flex; gap: 40px; font-family: var(--mono); font-size: 24px; color: var(--muted); margin-top: -28px; }
-.legend i { display: inline-block; width: 44px; vertical-align: middle; margin-right: 12px; border-top: 4px solid var(--flown); }
-.legend i.up { border-top: 4px dashed var(--up); }
-.list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 48px; font-family: var(--mono); font-size: 25px; margin-top: auto; }
-.list div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 6px 0; }
-.list .d { color: var(--muted); }
-.list .up { color: var(--up); }
+/* Layout: one 9:16 story frame centered on the page; slides stack inside it, tap left/right to move, hold to pause. Single dark "sky" world by design. */
+:root {
+  color-scheme: dark;
+  --page: #070b16;
+  --ink: #ffffff;
+  --soft: rgba(255,255,255,.72);
+  --faint: rgba(255,255,255,.16);
+  --land: rgba(255,255,255,.07);
+  --coast: rgba(255,255,255,.28);
+  --amber: #ffc24b;
+  --sky-night: linear-gradient(170deg, #0a1330 0%, #1b2d63 100%);
+  --sky-dawn: linear-gradient(170deg, #12325a 0%, #3f6e8f 55%, #d98b6a 100%);
+  --sky-day: linear-gradient(170deg, #0f4c8a 0%, #2f8fd0 100%);
+  --sky-sunset: linear-gradient(170deg, #1b1f4b 0%, #8a3d5c 60%, #f08a4b 100%);
+  --sky-deep: linear-gradient(170deg, #050a1a 0%, #13254f 100%);
+  --display: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--page); color: var(--ink); font-family: var(--body); display: grid; place-items: center; padding-inline: 16px; padding-block: 16px; }
+
+.frame {
+  position: relative; width: min(calc(100vw - 32px), calc((100dvh - 32px) * 9 / 16), 470px); aspect-ratio: 9 / 16;
+  border-radius: 18px; overflow: hidden; container-type: inline-size; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5); touch-action: manipulation;
+}
+.slide { position: absolute; inset: 0; padding: 16cqw 7cqw 7cqw; display: flex; flex-direction: column; gap: 3.4cqw; opacity: 0; visibility: hidden; transition: opacity .35s; }
+.slide.on { opacity: 1; visibility: visible; }
+.slide[data-sky="night"] { background: var(--sky-night); }
+.slide[data-sky="dawn"] { background: var(--sky-dawn); }
+.slide[data-sky="day"] { background: var(--sky-day); }
+.slide[data-sky="sunset"] { background: var(--sky-sunset); }
+.slide[data-sky="deep"] { background: var(--sky-deep); }
+
+/* top chrome */
+.bars { position: absolute; top: 3cqw; left: 3cqw; right: 3cqw; display: flex; gap: 1cqw; z-index: 5; }
+.bar { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,.3); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: #fff; }
+.who { position: absolute; top: 6.5cqw; left: 4cqw; right: 4cqw; display: flex; align-items: center; gap: 2.4cqw; z-index: 5; font-size: 3.4cqw; }
+.avatar { width: 8cqw; height: 8cqw; border-radius: 50%; background: var(--amber); color: #1b1f4b; display: grid; place-items: center; font: 900 4.4cqw var(--display); }
+.who b { font-weight: 600; }
+.who span { color: var(--soft); }
+.who .paused { margin-left: auto; font-family: var(--mono); font-size: 2.8cqw; letter-spacing: .1em; color: var(--soft); }
+
+.tap { position: absolute; top: 0; bottom: 0; z-index: 4; }
+.tap-prev { left: 0; width: 32%; }
+.tap-next { right: 0; width: 68%; }
+
+.eyebrow { font-family: var(--mono); font-size: 3cqw; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+.month { font-family: var(--display); font-weight: 900; font-size: 19cqw; line-height: .85; text-transform: uppercase; margin-top: 1cqw; }
+.cap { font-size: 4.2cqw; line-height: 1.3; color: var(--soft); }
+.cap b { color: var(--ink); }
+
+.map { width: 100%; flex: 1 1 0; min-height: 36cqw; }
+.map .arc { fill: none; stroke: #fff; stroke-linecap: round; }
+.map .arc.up { stroke: var(--amber); }
+.map .ghost { fill: none; stroke: rgba(255,255,255,.22); stroke-dasharray: 2 6; stroke-linecap: round; }
+.map .ghost.up { stroke: var(--amber); opacity: .55; stroke-dasharray: 8 7; }
+
+.cards { display: grid; gap: 1.8cqw; }
+.card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 3cqw; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 3cqw; padding: 2cqw 3cqw; backdrop-filter: blur(6px); transform: translateY(6cqw); opacity: 0; transition: transform .45s cubic-bezier(.2,.9,.3,1.3), opacity .3s; }
+.slide.on .card { transform: none; opacity: 1; }
+.card .route { font: 900 5.8cqw/1 var(--display); letter-spacing: .02em; }
+.card .meta { font-size: 3cqw; color: var(--soft); margin-top: .6cqw; }
+.card .when { font: 500 3cqw var(--mono); text-align: right; color: var(--soft); }
+.card .when b { display: block; font: 900 5.4cqw/1 var(--display); color: var(--ink); }
+.stamp { font: 500 2.6cqw var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: .6cqw 1.6cqw; border-radius: 99px; display: inline-block; margin-top: 1cqw; }
+.stamp.flown { background: rgba(255,255,255,.18); }
+.stamp.up { background: var(--amber); color: #1b1f4b; }
+
+.al { display: inline-grid; place-items: center; width: 11cqw; height: 7.6cqw; border-radius: 1.6cqw; font: 500 3.6cqw var(--mono); color: #fff; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+
+/* intro */
+.intro { justify-content: center; text-align: left; }
+.intro h1 { font: 900 25cqw/.82 var(--display); text-transform: uppercase; margin: 0; }
+.intro h1 span { color: var(--amber); display: block; }
+.intro p { font-size: 4.6cqw; color: var(--soft); margin: 2cqw 0 0; }
+.hint { position: absolute; bottom: 9cqw; left: 0; right: 0; text-align: center; font: 500 3.2cqw var(--mono); letter-spacing: .14em; color: var(--soft); animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateX(2cqw); } }
+.sky-plane { position: absolute; top: 24%; left: -15%; width: 14cqw; animation: fly 7s linear infinite; opacity: .9; }
+@keyframes fly { to { left: 115%; top: 12%; } }
+.cloud { position: absolute; background: rgba(255,255,255,.12); border-radius: 99px; filter: blur(1px); animation: drift 14s linear infinite; }
+@keyframes drift { from { transform: translateX(110cqw); } to { transform: translateX(-60cqw); } }
+
+/* airlines */
+.rows { display: grid; gap: 3.4cqw; margin-top: 3cqw; }
+.row { display: grid; grid-template-columns: auto 22cqw 1fr auto; align-items: center; gap: 3cqw; font-size: 4cqw; opacity: 0; transform: scale(.6); transition: transform .4s cubic-bezier(.2,.9,.3,1.5), opacity .3s; }
+.slide.on .row { opacity: 1; transform: none; }
+.row .track { height: 2.4cqw; border-radius: 99px; background: var(--faint); overflow: hidden; }
+.row .track i { display: block; height: 100%; width: 0; border-radius: 99px; background: #fff; transition: width .9s cubic-bezier(.2,.8,.2,1) .3s; }
+.row b { font: 900 6cqw var(--display); }
+
+/* stats */
+.big { display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
+.big div { background: rgba(255,255,255,.08); border-radius: 3cqw; padding: 2.6cqw 3.2cqw; }
+.big b { display: block; font: 900 10.5cqw/1 var(--display); font-variant-numeric: tabular-nums; }
+.big small { font: 500 2.8cqw var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.globe { display: grid; grid-template-columns: auto 1fr; gap: 4cqw; align-items: center; font-size: 4cqw; color: var(--soft); }
+.globe svg { width: 13cqw; height: 13cqw; }
+.next { background: var(--amber); color: #1b1f4b; border-radius: 3cqw; padding: 3.6cqw 4cqw; display: grid; gap: .6cqw; }
+.next small { font: 500 2.8cqw var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.next b { font: 900 8cqw/1 var(--display); }
+.replay { position: relative; z-index: 6; align-self: center; margin-top: auto; font: 600 4cqw var(--body); color: #1b1f4b; background: #fff; border: 0; border-radius: 99px; padding: 2.6cqw 7cqw; cursor: pointer; }
+.replay:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-plane, .cloud, .hint { animation: none; }
+  .card, .row, .row .track i, .slide { transition: none; }
+}
 </style>
-</head>
-<body>
-<div class="story">
-  <div>
-    <div class="eyebrow">My flight log</div>
-    <h1>2026<span>in the air</span></h1>
+
+<div class="frame" id="frame" tabindex="0" aria-label="2026 flight stories. Tap the right side or press the right arrow for the next story, the left side for the previous one. Hold or press space to pause.">
+  <div class="bars" id="bars"></div>
+  <div class="who">
+    <div class="avatar">T</div>
+    <b>tingyun</b><span id="whoWhen">2026 flights</span>
+    <span class="paused" id="paused" hidden>PAUSED</span>
   </div>
-  <div class="stats" id="stats"></div>
-  <svg id="map" viewBox="0 0 960 756"></svg>
-  <div class="legend"><span><i></i>Flown</span><span><i class="up"></i>Coming up</span></div>
-  <div class="list" id="list"></div>
+  <div id="slides"></div>
+  <div class="tap tap-prev" id="tapPrev" aria-hidden="true"></div>
+  <div class="tap tap-next" id="tapNext" aria-hidden="true"></div>
 </div>
+
 <script>
-const AP = { SEA:{lat:47.449,lon:-122.309,city:"Seattle"}, SFO:{lat:37.619,lon:-122.375,city:"San Francisco"}, SJC:{lat:37.363,lon:-121.929,city:"San José"}, DFW:{lat:32.899,lon:-97.040,city:"Dallas"} };
-const F = [["01-02","SEA","SJC"],["06-12","SFO","SEA"],["06-23","SEA","SJC"],["06-30","SFO","SEA"],["07-07","SEA","SJC"],["08-14","SFO","DFW"],["08-17","DFW","SFO"],["09-05","SJC","SEA"],["09-10","SEA","SJC"],["11-14","SFO","SEA"],["11-16","SEA","SFO"],["11-23","SJC","SEA"],["12-01","SEA","SJC"],["12-19","SJC","SEA"]];
+const AP = {
+  SEA: { city: "Seattle", lat: 47.449, lon: -122.309 },
+  SFO: { city: "San Francisco", lat: 37.619, lon: -122.375 },
+  SJC: { city: "San José", lat: 37.363, lon: -121.929 },
+  DFW: { city: "Dallas–Fort Worth", lat: 32.899, lon: -97.040 },
+};
+// Airline badges: IATA code on each carrier's brand colors (drawn, not official logos).
+const AL = {
+  DL: { name: "Delta", bg: "#C8102E" },
+  UA: { name: "United", bg: "#0033A0" },
+  WN: { name: "Southwest", bg: "linear-gradient(#304CB2 0 66%, #FFBF27 66% 83%, #C60C30 83%)" },
+  AS: { name: "Alaska", bg: "linear-gradient(#01426A 0 76%, #48A9C5 76%)" },
+  F9: { name: "Frontier", bg: "#00764F" },
+  AA: { name: "American", bg: "linear-gradient(#0078D2 0 76%, #C30019 76%)" },
+};
+const FLIGHTS = [
+  { d: "2026-01-02", from: "SEA", to: "SJC", air: "WN", no: "WN 4693" },
+  { d: "2026-06-12", from: "SFO", to: "SEA", air: "UA", no: "UA 5579", t: "10:59 PM" },
+  { d: "2026-06-23", from: "SEA", to: "SJC", air: "AS", no: "AS 319", t: "3:42 PM" },
+  { d: "2026-06-30", from: "SFO", to: "SEA", air: "UA", no: "UA 1389", t: "10:59 PM" },
+  { d: "2026-07-07", from: "SEA", to: "SJC", air: "DL", no: "DL 3736" },
+  { d: "2026-08-14", from: "SFO", to: "DFW", air: "F9", no: "F9 2376" },
+  { d: "2026-08-17", from: "DFW", to: "SFO", air: "AA", no: "AA 1949", t: "7:10 AM" },
+  { d: "2026-09-05", from: "SJC", to: "SEA", air: "DL", no: "Delta" },
+  { d: "2026-09-10", from: "SEA", to: "SJC", air: "DL", no: "Delta" },
+  { d: "2026-11-14", from: "SFO", to: "SEA", air: "AS", no: "AS 591", t: "6:48 PM" },
+  { d: "2026-11-16", from: "SEA", to: "SFO", air: "UA", no: "UA 499", t: "7:00 AM" },
+  { d: "2026-11-23", from: "SJC", to: "SEA", air: "WN", no: "WN 2150", t: "6:00 AM" },
+  { d: "2026-12-01", from: "SEA", to: "SJC", air: "DL", no: "DL 3736", t: "8:30 AM" },
+  { d: "2026-12-19", from: "SJC", to: "SEA", air: "WN", no: "WN 3914", t: "9:45 PM" },
+];
+const TRIPS = [
+  { m: "January", sky: "night", f: [0], cap: "<b>First flight of the year.</b> Seattle down to San José on Southwest." },
+  { m: "June", sky: "dawn", f: [1, 2, 3], cap: "<b>Three flights, two red-eyes.</b> Both SFO departures left at 10:59 PM." },
+  { m: "July", sky: "day", f: [4], cap: "<b>Delta to San José</b> on a SkyWest-run Embraer." },
+  { m: "August", sky: "sunset", f: [5, 6], cap: "<b>The longest trip:</b> 1,461 miles each way to Dallas and back." },
+  { m: "September", sky: "dawn", f: [7, 8], cap: "<b>Delta both ways,</b> five days apart." },
+  { m: "November", sky: "day", f: [9, 10, 11], cap: "<b>Three flights in ten days</b> on three different airlines." },
+  { m: "December", sky: "night", f: [12, 13], cap: "<b>Last flight of the year</b> lands in Seattle at 12:05 AM." },
+];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const today = new Date(); today.setHours(0,0,0,0);
-const fl = F.map(([md,from,to],i) => { const [m,d] = md.split("-").map(Number); const date = new Date(2026,m-1,d); return {i,from,to,date,up: date >= today, mi: miles(AP[from],AP[to])}; });
-function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+function miles(a, b) { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * 3958.8 * Math.asin(Math.sqrt(h)); }
+FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = f.date >= today; f.mi = miles(AP[f.from], AP[f.to]); });
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const badge = c => `<span class="al" style="background:${AL[c].bg}" title="${AL[c].name}">${c}</span>`;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PLANE = `<path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="#fff"/>`;
 
-document.getElementById("stats").innerHTML = [
-  [fl.length,"Flights"],[Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US"),"Miles"],[6,"Airlines"],[4,"Airports"]
-].map(([v,k]) => `<div class="stat"><b>${v}</b><small>${k}</small></div>`).join("");
+/* ---------- map ---------- */
+const S = 36, LON0 = -130, LAT0 = 50.5, KX = Math.cos(40 * Math.PI / 180);
+const P = (la, lo) => [(lo - LON0) * KX * S, (LAT0 - la) * S];
+const NS = "http://www.w3.org/2000/svg";
+const mk = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
+const COAST = [[51.5,-128.5],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[28,-114.5]];
 
-document.getElementById("list").innerHTML = fl.map(f =>
-  `<div class="${f.up ? "up" : ""}"><span class="d">${MON[f.date.getMonth()]} ${String(f.date.getDate()).padStart(2,"0")}</span><span>${f.from} → ${f.to}</span></div>`).join("");
+function drawMap(svg, flights) {
+  const codes = [...new Set(flights.flatMap(f => [f.from, f.to]))];
+  const pts = codes.map(c => P(AP[c].lat, AP[c].lon));
+  let x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0]));
+  let y0 = Math.min(...pts.map(p => p[1])), y1 = Math.max(...pts.map(p => p[1]));
+  const pad = 90; x0 -= pad; x1 += pad; y0 -= pad * .8; y1 += pad * .8;
+  const ratio = 1.15, w = x1 - x0, h = y1 - y0;
+  if (w / h < ratio) { const nw = h * ratio; x0 -= (nw - w) / 2; x1 = x0 + nw; } else { const nh = w / ratio; y0 -= (nh - h) / 2; y1 = y0 + nh; }
+  const vw = x1 - x0, k = vw / 560;
+  svg.setAttribute("viewBox", `${x0.toFixed(0)} ${y0.toFixed(0)} ${vw.toFixed(0)} ${(y1 - y0).toFixed(0)}`);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  const land = COAST.map(([a, b]) => P(a, b).map(v => v.toFixed(1)).join(",")).join(" L");
+  mk("path", { d: `M${land} L2000,1400 L2000,-600 Z`, fill: "var(--land)", stroke: "var(--coast)", "stroke-width": 1.6 * k }, svg);
 
-const S=36,LON0=-130,LAT0=50.5,KX=Math.cos(40*Math.PI/180);
-const P=(la,lo)=>[(lo-LON0)*KX*S,(LAT0-la)*S];
-const svg=document.getElementById("map"),NS="http://www.w3.org/2000/svg";
-const el=(t,a,p=svg)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);p.appendChild(n);return n;};
-const coast=[[50.5,-127.6],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[29.5,-115.4]];
-el("path",{d:"M"+coast.map(([a,b])=>P(a,b).map(v=>v.toFixed(1)).join(",")).join(" L")+" L1100,900 L1100,-100 Z",fill:"var(--land)",stroke:"var(--line)","stroke-width":2});
-const defs=el("defs",{});
-[["f","var(--flown)"],["u","var(--up)"]].forEach(([id,c])=>{const m=el("marker",{id:"a"+id,viewBox:"0 0 10 10",refX:8,refY:5,markerWidth:5,markerHeight:5,orient:"auto"},defs);el("path",{d:"M0,0 L10,5 L0,10 z",fill:c},m);});
-const groups={};
-fl.forEach(f=>{
-  const key=[f.from,f.to].sort().join("-"),n=(groups[key]=(groups[key]||0)+1)-1;
-  const [a,b]=key.split("-").map(k=>P(AP[k].lat,AP[k].lon));
-  const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),k=.10+.075*n;
-  const C=[(a[0]+b[0])/2-dy/len*k*len,(a[1]+b[1])/2+dx/len*k*len];
-  const s=P(AP[f.from].lat,AP[f.from].lon),e=P(AP[f.to].lat,AP[f.to].lon);
-  el("path",{d:`M${s} Q${C} ${e}`,fill:"none",stroke:f.up?"var(--up)":"var(--flown)","stroke-width":3.5,"stroke-dasharray":f.up?"10 8":"none",opacity:f.up?.95:.7,"marker-end":`url(#a${f.up?"u":"f"})`});
+  const groups = {}, out = [];
+  flights.forEach(f => {
+    const key = [f.from, f.to].sort().join("-"), n = (groups[key] = (groups[key] || 0) + 1) - 1;
+    const [a, b] = key.split("-").map(c => P(AP[c].lat, AP[c].lon));
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy), off = (.14 + .1 * n) * len;
+    const C = [(a[0] + b[0]) / 2 - dy / len * off, (a[1] + b[1]) / 2 + dx / len * off];
+    const s = P(AP[f.from].lat, AP[f.from].lon), e = P(AP[f.to].lat, AP[f.to].lon);
+    const d = `M${s.join(",")} Q${C.join(",")} ${e.join(",")}`;
+    mk("path", { d, class: "ghost" + (f.up ? " up" : ""), "stroke-width": 2.4 * k }, svg);
+    const arc = mk("path", { d, class: "arc" + (f.up ? " up" : ""), "stroke-width": 3.2 * k }, svg);
+    const plane = mk("g", { opacity: 0 }, svg); plane.innerHTML = PLANE;
+    out.push({ f, arc, plane, len: arc.getTotalLength(), k });
+  });
+  const LBL = { SEA: [1, 0], SFO: [-1, -14], SJC: [1, 16], DFW: [1, 24] };
+  codes.forEach(c => {
+    const [x, y] = P(AP[c].lat, AP[c].lon);
+    mk("circle", { cx: x, cy: y, r: 9 * k, fill: "rgba(255,255,255,.25)" }, svg);
+    mk("circle", { cx: x, cy: y, r: 5 * k, fill: "#fff" }, svg);
+    const [side, oy] = LBL[c];
+    const t = mk("text", { x: x + side * 14 * k, y: y + oy * k + 8 * k, "text-anchor": side > 0 ? "start" : "end", fill: "#fff", "font-family": "var(--display)", "font-weight": 900, "font-size": 26 * k }, svg);
+    t.textContent = c;
+  });
+  return out;
+}
+
+function fly(items, onDone) {
+  items.forEach(it => { it.arc.style.strokeDasharray = it.len; it.arc.style.strokeDashoffset = it.len; it.plane.setAttribute("opacity", 0); });
+  if (reduce) { items.forEach(it => { it.arc.style.strokeDashoffset = 0; }); return () => {}; }
+  const dur = 1300, gap = 250, t0 = performance.now(); let raf;
+  const step = now => {
+    let busy = false;
+    items.forEach((it, i) => {
+      const t = Math.min(1, Math.max(0, (now - t0 - i * (dur + gap)) / dur));
+      if (t < 1) busy = true;
+      const e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      it.arc.style.strokeDashoffset = it.len * (1 - e);
+      if (t > 0 && t < 1) {
+        const p = it.arc.getPointAtLength(it.len * e), q = it.arc.getPointAtLength(Math.min(it.len, it.len * e + 1));
+        const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+        it.plane.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${ang}) scale(${1.5 * it.k})`);
+        it.plane.setAttribute("opacity", 1);
+      } else it.plane.setAttribute("opacity", 0);
+    });
+    if (busy) raf = requestAnimationFrame(step); else if (onDone) onDone();
+  };
+  raf = requestAnimationFrame(step);
+  return () => cancelAnimationFrame(raf);
+}
+
+/* ---------- slides ---------- */
+const slidesEl = document.getElementById("slides");
+const SLIDES = [];
+function addSlide(html, sky, opts = {}) {
+  const el = document.createElement("section");
+  el.className = "slide" + (opts.cls ? " " + opts.cls : ""); el.dataset.sky = sky; el.innerHTML = html;
+  slidesEl.appendChild(el);
+  SLIDES.push({ el, dur: opts.dur || 6000, enter: opts.enter || (() => () => {}), label: opts.label || "" });
+  return el;
+}
+
+// intro
+addSlide(`
+  <div class="cloud" style="top:18%;width:40cqw;height:9cqw"></div>
+  <div class="cloud" style="top:64%;width:28cqw;height:7cqw;animation-delay:-6s"></div>
+  <svg class="sky-plane" viewBox="-12 -10 24 20">${PLANE}</svg>
+  <h1>2026<span>in the air</span></h1>
+  <p>${FLIGHTS.length} flights · ${Object.keys(AL).length} airlines · ${fmt(FLIGHTS.reduce((s, f) => s + f.mi, 0))} miles</p>
+  <div class="hint">TAP TO TAKE OFF →</div>`, "sunset", { cls: "intro", dur: 4500, label: "2026 flights" });
+
+// one slide per trip month
+TRIPS.forEach((trip, ti) => {
+  const fl = trip.f.map(i => FLIGHTS[i]);
+  const anyUp = fl.some(f => f.up);
+  const el = addSlide(`
+    <div>
+      <div class="eyebrow">Trip ${ti + 1} of ${TRIPS.length}${anyUp ? " · coming up" : ""}</div>
+      <div class="month">${trip.m}</div>
+    </div>
+    <div class="cap">${trip.cap}</div>
+    <svg class="map" role="img" aria-label="Route map for ${trip.m}"></svg>
+    <div class="cards">${fl.map((f, j) => `
+      <div class="card" style="transition-delay:${200 + j * 120}ms">
+        ${badge(f.air)}
+        <div><div class="route">${f.from} → ${f.to}</div>
+          <div class="meta">${AL[f.air].name}${f.no && f.no !== "Delta" ? " · " + f.no : ""} · ${fmt(f.mi)} mi</div>
+          <span class="stamp ${f.up ? "up" : "flown"}">${f.up ? "Coming up" : "Flown"}</span></div>
+        <div class="when">${MON[f.date.getMonth()].toUpperCase()}<b>${f.date.getDate()}</b>${f.t || ""}</div>
+      </div>`).join("")}
+    </div>`, trip.sky, { dur: 2200 + fl.length * 1550, label: trip.m });
+  const items = drawMap(el.querySelector(".map"), fl);
+  SLIDES[SLIDES.length - 1].enter = () => fly(items);
 });
-const visits={};fl.forEach(f=>{visits[f.from]=(visits[f.from]||0)+1;visits[f.to]=(visits[f.to]||0)+1;});
-const LBL={SEA:[1,8,"start"],SFO:[-1,-30,"end"],SJC:[1,26,"start"],DFW:[1,52,"end"]};
-Object.entries(AP).forEach(([c,a])=>{
-  const [x,y]=P(a.lat,a.lon),r=7+Math.sqrt(visits[c])*2.6,[sx,oy,an]=LBL[c],lx=c==="DFW"?x+r:x+sx*(r+12);
-  el("circle",{cx:x,cy:y,r:r+5,fill:"var(--bg)"});el("circle",{cx:x,cy:y,r,fill:"var(--ink)"});
-  const t=el("text",{x:lx,y:y+oy,"text-anchor":an,fill:"var(--ink)"});
-  el("tspan",{"font-family":"var(--display)","font-weight":800,"font-size":40},t).textContent=c;
-  el("tspan",{x:lx,dy:26,"font-family":"var(--mono)","font-size":20,fill:"var(--muted)"},t).textContent=a.city;
-  el("tspan",{x:lx,dy:24,"font-family":"var(--mono)","font-size":20,fill:"var(--muted)"},t).textContent=`${visits[c]} flights`;
+
+// airlines
+const counts = Object.keys(AL).map(c => [c, FLIGHTS.filter(f => f.air === c).length]).sort((a, b) => b[1] - a[1]);
+const maxC = counts[0][1];
+addSlide(`
+  <div><div class="eyebrow">Your airlines</div><div class="month">6 crews</div></div>
+  <div class="cap"><b>${AL[counts[0][0]].name} flew you most</b>, ${counts[0][1]} times. Southwest and United tie for second.</div>
+  <div class="rows">${counts.map(([c, n], j) => `
+    <div class="row" style="transition-delay:${j * 110}ms">${badge(c)}<span>${AL[c].name}</span>
+      <span class="track"><i data-w="${(n / maxC) * 100}"></i></span><b>${n}</b></div>`).join("")}
+  </div>`, "deep", {
+  dur: 6000, label: "Airlines",
 });
+SLIDES[SLIDES.length - 1].enter = function () {
+  const bars = this.el.querySelectorAll(".track i");
+  bars.forEach(b => b.style.width = "0");
+  requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach(b => b.style.width = b.dataset.w + "%")));
+  return () => {};
+};
+
+// wrap-up
+const totalMi = FLIGHTS.reduce((s, f) => s + f.mi, 0);
+const next = FLIGHTS.find(f => f.up);
+const days = next ? Math.round((next.date - today) / 864e5) : 0;
+const pct = Math.round(totalMi / 24901 * 100);
+addSlide(`
+  <div><div class="eyebrow">The whole year</div><div class="month">By the numbers</div></div>
+  <div class="big">
+    <div><b data-n="${FLIGHTS.length}">0</b><small>Flights</small></div>
+    <div><b data-n="${Math.round(totalMi)}">0</b><small>Miles</small></div>
+    <div><b data-n="4">0</b><small>Airports</small></div>
+    <div><b data-n="${FLIGHTS.filter(f => f.from === "SEA" || f.to === "SEA").length}">0</b><small>Times through SEA</small></div>
+  </div>
+  <div class="globe">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="4"/>
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#ffc24b" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(pct / 100 * 100.5).toFixed(1)} 100.5" transform="rotate(-90 20 20)"/></svg>
+    <div>That's <b style="color:#fff">${pct}% of the way around the Earth</b>.</div>
+  </div>
+  ${next ? `<div class="next"><small>Next takeoff</small><b>${days === 0 ? "Today" : days === 1 ? "Tomorrow" : "In " + days + " days"}</b><span>${MON[next.date.getMonth()]} ${next.date.getDate()} · ${next.from} → ${next.to} · ${AL[next.air].name}</span></div>` : ""}
+  <button class="replay" id="replay" type="button">↺ Watch again</button>`, "night", { dur: 0, label: "The year" });
+SLIDES[SLIDES.length - 1].enter = function () {
+  const nums = this.el.querySelectorAll("[data-n]");
+  if (reduce) { nums.forEach(n => n.textContent = fmt(+n.dataset.n)); return () => {}; }
+  const t0 = performance.now(); let raf;
+  const step = now => {
+    const t = Math.min(1, (now - t0) / 1400), e = 1 - Math.pow(1 - t, 3);
+    nums.forEach(n => n.textContent = fmt(+n.dataset.n * e));
+    if (t < 1) raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+  return () => cancelAnimationFrame(raf);
+};
+
+/* ---------- player ---------- */
+const barsEl = document.getElementById("bars");
+barsEl.innerHTML = SLIDES.map(() => `<div class="bar"><i></i></div>`).join("");
+const fills = [...barsEl.querySelectorAll("i")];
+const pausedEl = document.getElementById("paused"), whoWhen = document.getElementById("whoWhen");
+let cur = -1, elapsed = 0, last = 0, paused = false, stop = () => {};
+
+function show(i) {
+  i = Math.max(0, Math.min(SLIDES.length - 1, i));
+  stop();
+  SLIDES.forEach((s, j) => s.el.classList.toggle("on", j === i));
+  fills.forEach((f, j) => f.style.width = j < i ? "100%" : "0");
+  cur = i; elapsed = 0; last = performance.now();
+  whoWhen.textContent = SLIDES[i].label;
+  stop = SLIDES[i].enter.call(SLIDES[i]) || (() => {});
+}
+function tick(now) {
+  const s = SLIDES[cur];
+  if (!paused && s.dur) {
+    elapsed += now - last;
+    fills[cur].style.width = Math.min(100, elapsed / s.dur * 100) + "%";
+    if (elapsed >= s.dur && cur < SLIDES.length - 1) show(cur + 1);
+  } else if (!s.dur) fills[cur].style.width = "100%";
+  last = now;
+  requestAnimationFrame(tick);
+}
+function setPaused(p) { paused = p; pausedEl.hidden = !p; }
+
+let holdTimer = null, held = false;
+function bindTap(el, dir) {
+  el.addEventListener("pointerdown", () => { held = false; holdTimer = setTimeout(() => { held = true; setPaused(true); }, 220); });
+  el.addEventListener("pointerup", () => { clearTimeout(holdTimer); if (held) { setPaused(false); return; } show(cur + dir); });
+  el.addEventListener("pointerleave", () => { clearTimeout(holdTimer); if (held) { held = false; setPaused(false); } });
+}
+bindTap(document.getElementById("tapPrev"), -1);
+bindTap(document.getElementById("tapNext"), 1);
+document.getElementById("replay").addEventListener("click", e => { e.stopPropagation(); setPaused(false); show(0); });
+const frame = document.getElementById("frame");
+frame.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); }
+  else if (e.key === " ") { setPaused(!paused); e.preventDefault(); }
+});
+document.addEventListener("visibilitychange", () => { last = performance.now(); });
+
+const start = /^#s(\d+)$/.exec(location.hash);
+show(start ? +start[1] : 0);
+requestAnimationFrame(t => { last = t; tick(t); });
+frame.focus({ preventScroll: true });
 </script>
-</body>
+
 </html>
