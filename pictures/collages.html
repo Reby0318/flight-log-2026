@@ -15,14 +15,15 @@
 * { box-sizing: border-box; margin: 0; }
 html, body { width: 1080px; height: 1920px; overflow: hidden; }
 .pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--wall); color: var(--ink); }
-h1 { position: absolute; top: 46px; left: 60px; font: 700 92px/1 var(--hand); transform: rotate(-2deg); color: var(--title, #262a33); }
-h1 span { display: inline-block; margin: 10px 0 0 120px; font: 400 76px/1 var(--marker); background: linear-gradient(transparent 55%, var(--hl) 55% 92%, transparent 92%); padding: 0 12px; transform: rotate(-3deg); color: var(--hlInk, #262a33); }
+h1 { position: absolute; top: 34px; left: 56px; font: 700 88px/.95 var(--hand); transform: rotate(-2deg); color: var(--title, #262a33); }
+h1 small { display: block; width: max-content; margin: 0 0 10px 6px; padding: 8px 18px 6px; border-radius: 999px; background: #fff; color: #262a33; font: 500 22px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; transform: rotate(2deg); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+h1 span { display: inline-block; margin: 6px 0 0 110px; font: 400 68px/1 var(--marker); background: linear-gradient(transparent 55%, var(--hl) 55% 92%, transparent 92%); padding: 0 12px; transform: rotate(-3deg); color: var(--hlInk, #262a33); }
 .doodle { position: absolute; z-index: 9; }
 .burst { position: absolute; z-index: 10; }
 .pin { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, var(--pin) 60%); box-shadow: 0 4px 5px rgba(0,0,0,.3); z-index: 9; }
-.tape { position: absolute; height: 46px; background: var(--tape1); z-index: 9; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tape { position: absolute; height: 46px; background: repeating-linear-gradient(45deg, rgba(255,255,255,.38) 0 7px, transparent 7px 14px), var(--tape1); z-index: 9; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
-.mapcard { position: absolute; top: 250px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
+.mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
 .mapcard svg { width: 964px; height: 560px; display: block; border-radius: 4px; }
 .legend { display: flex; justify-content: space-between; align-items: center; padding: 18px 6px 0; }
 .legend div { display: flex; align-items: center; gap: 8px; font: 700 26px var(--hand); }
@@ -54,10 +55,10 @@ h1 span { display: inline-block; margin: 10px 0 0 120px; font: 400 76px/1 var(--
 </head>
 <body>
 <div class="pg" id="pg">
-  <h1>2026, flights I have taken<br><span>in the air.</span></h1>
+  <h1><small>✈ my year in the air</small>All the flights<br><span>I took in 2026</span></h1>
 
   <div class="mapcard"><svg id="map"></svg><div class="legend" id="legend"></div></div>
-  <span class="pin" style="top:240px;left:520px"></span>
+  <span class="pin" style="top:262px;left:520px"></span>
 
   <div class="passport" id="passport"><div class="hd"><span>VISAS</span><span>2026</span></div><div class="no">— 14 —</div></div>
   <div class="tape" style="top:940px;left:200px;width:170px;transform:rotate(-8deg)"></div>
@@ -80,7 +81,7 @@ const THEMES = [
     deco: confetti(140, ["#ff5fa2","#ffb800","#4da3ff","#36c98e","#9b6bff","#ff7a45"]) },
   { name: "luxury · black & gold", cards: "border: 8px solid #c9a24a; box-shadow: 0 0 0 2px #f3dc8f, 0 24px 40px rgba(0,0,0,.5)",  wall: "linear-gradient(135deg, rgba(255,255,255,.05) 0 25%, transparent 25% 50%, rgba(255,255,255,.05) 50% 75%, transparent 75%) 0 0/8px 8px, radial-gradient(ellipse at 50% 20%, #26231d, #0c0b0a 75%)", title: "#e6c77a", hl: "#b8902f", hlInk: "#fff8e6", n1: "#f3e7c9", n2: "#e9dcc2", tape1: "linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)", tape2: "linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)", pp: "#e9e4d6", rc: "#fbf7ee", water: "#d9d2bf", land: "#fbf8f0", land2: "#efe9db",
     deco: sparkle(26, ["#e6c77a","#f3dc8f"], 3) },
-  { name: "luxury · emerald velvet", cards: "border: 8px solid #c9a24a; box-shadow: 0 0 0 2px #f3dc8f, 0 24px 40px rgba(0,0,0,.45)",  wall: "radial-gradient(ellipse at 30% 20%, #1f6b52 0%, #0d3a2c 70%, #082519 100%)", title: "#f0d58c", hl: "#c9a24a", hlInk: "#082519", n1: "#f3e7c9", n2: "#f7d9d0", tape1: "linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)", tape2: "rgba(243,231,201,.8)", pp: "#e8efe9", rc: "#fbf7ee", water: "#cfe3da",
+  { name: "luxury · emerald velvet", hlFull: true, cards: "border: 8px solid #c9a24a; box-shadow: 0 0 0 2px #f3dc8f, 0 24px 40px rgba(0,0,0,.45)",  wall: "radial-gradient(ellipse at 30% 20%, #1f6b52 0%, #0d3a2c 70%, #082519 100%)", title: "#f0d58c", hl: "#c9a24a", hlInk: "#082519", n1: "#f3e7c9", n2: "#f7d9d0", tape1: "linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)", tape2: "rgba(243,231,201,.8)", pp: "#e8efe9", rc: "#fbf7ee", water: "#cfe3da",
     deco: sparkle(18, ["#f0d58c"], 5) },
   { name: "luxury · blush marble", cards: "border: 6px solid #d4af5e; box-shadow: 0 18px 34px rgba(120,80,60,.2)",  wall: "linear-gradient(115deg, transparent 40%, rgba(190,160,150,.25) 42%, transparent 44%), linear-gradient(35deg, transparent 60%, rgba(190,160,150,.2) 61%, transparent 63%), linear-gradient(160deg, transparent 20%, rgba(200,170,160,.18) 21%, transparent 23%), #f6ece9", title: "#3b2a2a", hl: "#e8c58c", n1: "#ffffff", n2: "#f6d6d6", tape1: "linear-gradient(90deg,#c9a24a,#f3dc8f,#c9a24a)", tape2: "rgba(240,200,200,.8)", pp: "#f4e8e6", water: "#efdcd8",
     deco: sparkle(14, ["#d4af5e"], 7) },
@@ -96,13 +97,13 @@ const THEMES = [
   { name: "beautiful · lavender dusk", wall: "linear-gradient(170deg, #f3e9ff 0%, #dccdfb 60%, #c7b8f0 100%)", hl: "#ffffff", hlInk: "#6a4fb3", pp: "#efe8fb", n1: "#ffffff", n2: "#ffd6e2", water: "#ddd8f7", tape1: "rgba(255,255,255,.7)",
     deco: sparkle(20, ["#ffffff"], 13) },
   { name: "attractive · coral pop", cards: "box-shadow: 14px 14px 0 #1fd1c1",  wall: `radial-gradient(rgba(255,255,255,.25) 2px, transparent 2.5px) 0 0/26px 26px, #ff7a6b`, title: "#ffffff", hl: "#1fd1c1", hlInk: "#fff", n1: "#fff27a", n2: "#ffffff", tape1: "rgba(31,209,193,.7)", tape2: "rgba(255,242,122,.8)", water: "#cfeff0" },
-  { name: "attractive · navy & gold", cards: "border: 6px solid #ffc24b; box-shadow: 0 20px 40px rgba(0,0,0,.4)",  wall: `radial-gradient(rgba(255,255,255,.08) 1px, transparent 1.5px) 0 0/12px 12px, #1d2b4f`, title: "#ffffff", hl: "#ffc24b", pp: "#efe2e4", n1: "#ffc24b", n2: "#9fd3ff", water: "#b9cdf0", mirror: true },
+  { name: "attractive · navy & gold", hlFull: true, cards: "border: 6px solid #ffc24b; box-shadow: 0 20px 40px rgba(0,0,0,.4)",  wall: `radial-gradient(rgba(255,255,255,.08) 1px, transparent 1.5px) 0 0/12px 12px, #1d2b4f`, title: "#ffffff", hl: "#ffc24b", pp: "#efe2e4", n1: "#ffc24b", n2: "#9fd3ff", water: "#b9cdf0", mirror: true },
   { name: "quality · linen", wall: "repeating-linear-gradient(0deg, rgba(120,100,70,.05) 0 2px, transparent 2px 5px), repeating-linear-gradient(90deg, rgba(120,100,70,.05) 0 2px, transparent 2px 5px), #efe8dc", hl: "#c9e4ff", pp: "#dfe7f3", n1: "#fff3a0", n2: "#f9c6a8" },
-  { name: "quality · leather & kraft", wall: "radial-gradient(rgba(0,0,0,.12) 1px, transparent 1.6px) 0 0/7px 7px, radial-gradient(ellipse at 50% 30%, #8b5a3c, #5c3a25 80%)", title: "#f6e7cf", hl: "#e0b26b", hlInk: "#3b2416", n1: "#f6e7cf", n2: "#d9c3a0", rc: "#fffbea", tape1: "rgba(246,231,207,.7)", mirror: true },
+  { name: "quality · leather & kraft", hlFull: true, wall: "radial-gradient(rgba(0,0,0,.12) 1px, transparent 1.6px) 0 0/7px 7px, radial-gradient(ellipse at 50% 30%, #8b5a3c, #5c3a25 80%)", title: "#f6e7cf", hl: "#e0b26b", hlInk: "#3b2416", n1: "#f6e7cf", n2: "#d9c3a0", rc: "#fffbea", tape1: "rgba(246,231,207,.7)", mirror: true },
   { name: "easy · graph paper", wall: "linear-gradient(#cfe0f3 1.5px, transparent 1.5px) 0 0/54px 54px, linear-gradient(90deg, #cfe0f3 1.5px, transparent 1.5px) 0 0/54px 54px, #fbfdff", hl: "#9be3c8", n1: "#ffe680", n2: "#ffb3c7" },
   { name: "easy · mint", wall: `radial-gradient(rgba(30,120,90,.12) 1px, transparent 1.5px) 0 0/12px 12px, #dff3ea`, hl: "#ffd36b", n1: "#ffb3c7", n2: "#fff3a0", water: "#c8ece4", mirror: true },
-  { name: "interesting · blueprint", wall: "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px) 0 0/54px 54px, linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px) 0 0/54px 54px, radial-gradient(ellipse at 50% 40%, #2563a8, #173f73)", title: "#ffffff", hl: "#ffd27a", n1: "#ffd27a", n2: "#9fd3ff", water: "#c9def5" },
-  { name: "interesting · chalkboard", wall: "radial-gradient(ellipse at 40% 30%, #3a5f4f 0%, #1f3a2e 85%)", title: "#f4f4ee", hl: "#ff8fb3", n1: "#fff3a0", n2: "#ffd0a0", water: "#bfe0d3", mirror: true },
+  { name: "interesting · blueprint", hlFull: true, wall: "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px) 0 0/54px 54px, linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px) 0 0/54px 54px, radial-gradient(ellipse at 50% 40%, #2563a8, #173f73)", title: "#ffffff", hl: "#ffd27a", n1: "#ffd27a", n2: "#9fd3ff", water: "#c9def5" },
+  { name: "interesting · chalkboard", hlFull: true, wall: "radial-gradient(ellipse at 40% 30%, #3a5f4f 0%, #1f3a2e 85%)", title: "#f4f4ee", hl: "#ff8fb3", n1: "#fff3a0", n2: "#ffd0a0", water: "#bfe0d3", mirror: true },
 ];
 const tm = /^#c(\d+)$/.exec(location.hash);
 const TH = { ...BASE, ...THEMES[(tm ? Math.min(20, Math.max(1, +tm[1])) : 1) - 1] };
@@ -172,11 +173,18 @@ const D = {
 const place = (k, x, y, w, r = 0) => `<div class="doodle" style="left:${x}px;top:${y}px;width:${w}px;transform:rotate(${r}deg)">${D[k]}</div>`;
 let pts = "", N = 18; for (let k = 0; k < N * 2; k++) { const a = k / (N * 2) * Math.PI * 2, rr = k % 2 ? 62 : 80; pts += `${(90 + Math.cos(a) * rr).toFixed(1)},${(90 + Math.sin(a) * rr).toFixed(1)} `; }
 document.getElementById("pg").insertAdjacentHTML("beforeend",
-  place("plane", 610, 138, 170, -8) + place("star", 40, 30, 46, -10) + place("star", 690, 150, 34, 20) + place("cloud", 905, 92, 130, 6) +
+  place("plane", 640, 70, 170, -8) + place("star", 26, 150, 40, -10) + place("star", 610, 190, 34, 20) + place("cloud", 905, 70, 130, 6) +
   place("heart", 985, 640, 48, 14) + place("suitcase", 520, 1800, 82, -10) + place("star", 1010, 1870, 40) +
   `<div class="burst" style="left:925px;top:925px;width:150px;transform:rotate(12deg)"><svg viewBox="0 0 180 180"><polygon points="${pts}" fill="#ff6b8b" stroke="#262a33" stroke-width="4" stroke-linejoin="round"/><text x="90" y="86" text-anchor="middle" font-family="Permanent Marker" font-size="52" fill="#fff">14</text><text x="90" y="118" text-anchor="middle" font-family="Permanent Marker" font-size="26" fill="#fff">flights!</text></svg></div>`);
 
+/* ---------- lively stickers ---------- */
+document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  <div class="burst" style="left:44px;top:300px;width:128px;transform:rotate(-14deg)"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="${TH.hl}" stroke="#262a33" stroke-width="4"/><circle cx="60" cy="60" r="44" fill="none" stroke="#262a33" stroke-width="2" stroke-dasharray="3 5"/><text x="60" y="56" text-anchor="middle" font-family="Permanent Marker" font-size="22" fill="${TH.hlInk || "#262a33"}">wheels</text><text x="60" y="82" text-anchor="middle" font-family="Permanent Marker" font-size="24" fill="${TH.hlInk || "#262a33"}">up!</text></svg></div>
+  <div class="burst" style="left:${TH.mirror ? 640 : 330}px;top:922px;transform:rotate(${TH.mirror ? 4 : -5}deg);background:#fff;border:3px solid #262a33;border-radius:999px;padding:8px 20px 6px;font:700 30px Caveat;color:#262a33;box-shadow:4px 4px 0 #262a33">window seat ♡</div>
+  ${[[1000,560],[40,1090],[590,1240],[1040,1350],[560,1660]].map(([x,y],i) => `<svg style="position:absolute;left:${x}px;top:${y}px;width:${22 + i % 3 * 8}px;z-index:10" viewBox="0 0 20 20"><path d="M10 0 L12 8 L20 10 L12 12 L10 20 L8 12 L0 10 L8 8Z" fill="${["#ffd34d","#ff8fc8","#7cc8ff"][i % 3]}" stroke="#262a33" stroke-width="1.2"/></svg>`).join("")}`);
+
 /* ---------- mirrored layout: receipt on the left, passport on the right ---------- */
+if (TH.hlFull) { const sp = document.querySelector("h1 span"); sp.style.background = TH.hl; sp.style.color = "#1d1d1f"; sp.style.padding = "6px 18px 2px"; sp.style.borderRadius = "6px"; }
 if (TH.cards) document.querySelectorAll(".mapcard, .passport, #receipt").forEach(el => el.style.cssText += ";" + TH.cards);
 if (TH.mirror) {
   const pp = document.querySelector(".passport"), rc = document.getElementById("receipt"), tapes = document.querySelectorAll(".tape"), burst = document.querySelector(".burst");
