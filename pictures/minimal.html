@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flights · Minimal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Quiet page: small serif year, hairline route map, a plain dated list. Most of the canvas stays empty. */
+:root { --bg: #eef0f2; --ink: #16181d; --mute: #8b919c; --line: #c9cdd4;
+  --serif: "Instrument Serif", Georgia, serif; --mono: "IBM Plex Mono", Menlo, monospace; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+.page { position: relative; width: 1080px; height: 1920px; color: var(--ink); padding: 150px 110px; }
+.year { font: 400 150px/1 var(--serif); letter-spacing: -.01em; }
+.sub { font: italic 400 48px/1.2 var(--serif); color: var(--mute); margin-top: 10px; }
+.map { position: absolute; top: 470px; left: 60px; width: 960px; height: 640px; }
+.list { position: absolute; top: 1180px; left: 110px; right: 110px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 70px; font: 400 25px/1 var(--mono); }
+.row { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; height: 56px; border-top: 1px solid var(--line); }
+.row .d { color: var(--mute); }
+.row .a { display: inline-flex; align-items: center; gap: 10px; color: var(--mute); font-size: 20px; }
+.row .a i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.row.up { color: var(--mute); }
+.foot { position: absolute; bottom: 140px; left: 110px; right: 110px; display: flex; justify-content: space-between; font: 400 22px var(--mono); color: var(--mute); letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="year">2026</div>
+  <div class="sub">fourteen flights</div>
+  <svg class="map" id="map" viewBox="150 40 820 660"></svg>
+  <div class="list" id="list"></div>
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+const AP = { SEA:{lat:47.449,lon:-122.309}, SFO:{lat:37.619,lon:-122.375}, SJC:{lat:37.363,lon:-121.929}, DFW:{lat:32.899,lon:-97.040} };
+const AL = { DL:"#C8102E", UA:"#0033A0", WN:"#304CB2", AS:"#01426A", F9:"#00764F", AA:"#0078D2" };
+const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
+const today = new Date(); today.setHours(0,0,0,0);
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{md,from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to])};});
+
+document.getElementById("list").innerHTML = [fl.slice(0,7), fl.slice(7)].map(col => `<div>${col.map(f =>
+  `<div class="row${f.up ? " up" : ""}"><span class="d">${f.md.replace("-", ".")}</span><span>${f.from} — ${f.to}</span><span class="a"><i style="background:${AL[f.air]}"></i>${f.air}</span></div>`).join("")}</div>`).join("");
+document.getElementById("foot").innerHTML = `<span>${Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US")} mi</span><span>6 airlines</span><span>4 airports</span>`;
+
+const S=36,LON0=-130,LAT0=50.5,KX=Math.cos(40*Math.PI/180);
+const P=(la,lo)=>[(lo-LON0)*KX*S,(LAT0-la)*S];
+const svg=document.getElementById("map"),NS="http://www.w3.org/2000/svg";
+const mk=(t,a,p=svg)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);p.appendChild(n);return n;};
+const coast=[[52,-129],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[27,-114]];
+mk("path",{d:"M"+coast.map(([a,b])=>P(a,b).map(v=>v.toFixed(1)).join(",")).join(" L"),fill:"none",stroke:"var(--line)","stroke-width":1.5});
+const groups={};
+fl.forEach(f=>{
+  const key=[f.from,f.to].sort().join("-"),n=(groups[key]=(groups[key]||0)+1)-1;
+  const [a,b]=key.split("-").map(k=>P(AP[k].lat,AP[k].lon));
+  const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),off=(.1+.07*n)*len;
+  const C=[(a[0]+b[0])/2-dy/len*off,(a[1]+b[1])/2+dx/len*off];
+  const s=P(AP[f.from].lat,AP[f.from].lon),e=P(AP[f.to].lat,AP[f.to].lon);
+  mk("path",{d:`M${s} Q${C} ${e}`,fill:"none",stroke:f.up?"var(--mute)":"var(--ink)","stroke-width":1.6,"stroke-dasharray":f.up?"5 6":"none"});
+});
+const LBL={SEA:[18,8,"start"],SFO:[-18,-4,"end"],SJC:[18,22,"start"],DFW:[-10,34,"end"]};
+Object.entries(AP).forEach(([c,a])=>{
+  const [x,y]=P(a.lat,a.lon);
+  mk("circle",{cx:x,cy:y,r:6,fill:"var(--bg)",stroke:"var(--ink)","stroke-width":2});
+  const [ox,oy,an]=LBL[c];
+  mk("text",{x:x+ox,y:y+oy,"text-anchor":an,"font-family":"var(--mono)","font-size":22,"letter-spacing":"2",fill:"var(--ink)"}).textContent=c;
+});
+</script>
+</body>
+</html>

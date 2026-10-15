@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flights · Scrapbook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Special+Elite&display=swap">
+<style>
+/* Graph-paper journal page: handwritten title, hand-drawn route map, taped ticket stub, sticky note, checklist of every flight. */
+:root {
+  --paper: #fbfcfd; --grid: #dbe5ef; --ink: #22314f; --pencil: #8a94a6; --blue: #2c55b8; --hi: #ff8a3d;
+  --tape1: rgba(255, 170, 190, .62); --tape2: rgba(140, 205, 190, .62); --tape3: rgba(255, 214, 102, .66);
+  --hand: "Caveat", "Bradley Hand", cursive; --type: "Special Elite", "Courier New", monospace;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+.page { position: relative; width: 1080px; height: 1920px; color: var(--ink); font-family: var(--hand);
+  background: linear-gradient(var(--grid) 1.5px, transparent 1.5px) 0 0 / 54px 54px, linear-gradient(90deg, var(--grid) 1.5px, transparent 1.5px) 0 0 / 54px 54px, var(--paper); }
+.margin { position: absolute; top: 0; bottom: 0; left: 92px; width: 3px; background: rgba(230, 110, 120, .45); }
+.tape { position: absolute; height: 52px; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+h1 { position: absolute; top: 120px; left: 140px; font: 700 150px/0.85 var(--hand); transform: rotate(-3deg); }
+h1 span { display: block; font-size: 96px; color: var(--blue); margin-left: 70px; }
+.doodle { position: absolute; top: 140px; right: 110px; width: 170px; transform: rotate(14deg); }
+
+.map { position: absolute; top: 470px; left: 60px; width: 960px; height: 720px; }
+
+.stub { position: absolute; top: 1105px; left: 470px; width: 360px; background: #fff; border: 2px solid #c9d2e0; border-radius: 10px; padding: 18px 22px; font-family: var(--type); transform: rotate(5deg); box-shadow: 0 6px 16px rgba(30,40,70,.15); }
+.stub::after { content: ""; position: absolute; top: 0; bottom: 0; right: 76px; border-right: 2px dashed #c9d2e0; }
+.stub small { font-size: 17px; color: var(--pencil); letter-spacing: .08em; }
+.stub b { display: block; font-size: 44px; font-weight: 400; margin: 4px 0; }
+.stub span { font-size: 20px; }
+
+.sticky { position: absolute; top: 470px; right: 64px; width: 280px; padding: 26px 24px 30px; background: #ffe07a; transform: rotate(-4deg); box-shadow: 0 10px 18px rgba(60,50,0,.18); font-size: 40px; line-height: 1.05; }
+.sticky b { display: block; font-size: 58px; }
+
+.list { position: absolute; top: 1270px; left: 130px; right: 70px; }
+.list h2 { font: 700 64px var(--hand); transform: rotate(-1.5deg); margin-bottom: 8px; }
+.list h2 u { text-decoration-color: var(--hi); text-decoration-thickness: 6px; text-underline-offset: 6px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 40px; }
+.row { display: flex; align-items: center; gap: 14px; height: 54px; font-size: 40px; white-space: nowrap; }
+.box { width: 30px; height: 30px; border: 3px solid var(--ink); border-radius: 5px; position: relative; flex: none; transform: rotate(-4deg); }
+.row.done .box::after { content: "✓"; position: absolute; left: 2px; top: -24px; font: 700 50px var(--hand); color: var(--blue); }
+.row .d { width: 96px; color: var(--pencil); }
+.row.up .r { background: linear-gradient(transparent 55%, rgba(255,138,61,.35) 55%); }
+.al { display: inline-grid; place-items: center; width: 46px; height: 30px; border-radius: 6px; font: 15px var(--type); color: #fff; transform: rotate(3deg); flex: none; margin-left: auto; }
+.foot { position: absolute; bottom: 70px; left: 140px; font-size: 40px; color: var(--pencil); transform: rotate(-1deg); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="margin"></div>
+  <div class="tape" style="top:96px;left:110px;width:210px;background:var(--tape1);transform:rotate(-8deg)"></div>
+  <h1>my 2026<span>in the air</span></h1>
+  <svg class="doodle" viewBox="-12 -10 24 20" fill="none" stroke="#22314f" stroke-width=".9" stroke-linejoin="round"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z"/><path d="M-11 6 q-3 1 -5 0 M-12 3 q-2 .5 -3.5 0" stroke-dasharray="1 1.4"/></svg>
+
+  <svg class="map" id="map" viewBox="40 40 940 700"><defs><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></defs></svg>
+
+  <div class="sticky" id="sticky"></div>
+
+  <div class="stub">
+    <div class="tape" style="top:-26px;left:110px;width:130px;height:42px;background:var(--tape2);transform:rotate(-4deg)"></div>
+    <small>LONGEST TRIP · AUG 14</small>
+    <b>SFO → DFW</b>
+    <span>1,461 mi each way</span>
+  </div>
+
+  <div class="list">
+    <h2>every flight <u>this year</u></h2>
+    <div class="cols" id="cols"></div>
+  </div>
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+const AP = { SEA:{lat:47.449,lon:-122.309}, SFO:{lat:37.619,lon:-122.375}, SJC:{lat:37.363,lon:-121.929}, DFW:{lat:32.899,lon:-97.040} };
+const AL = { DL:"#C8102E", UA:"#0033A0", WN:"linear-gradient(#304CB2 0 66%, #FFBF27 66% 83%, #C60C30 83%)", AS:"linear-gradient(#01426A 0 76%, #48A9C5 76%)", F9:"#00764F", AA:"linear-gradient(#0078D2 0 76%, #C30019 76%)" };
+const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
+const MON = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const today = new Date(); today.setHours(0,0,0,0);
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to])};});
+
+document.getElementById("cols").innerHTML = [fl.slice(0,7), fl.slice(7)].map(col => `<div>${col.map(f =>
+  `<div class="row ${f.up ? "up" : "done"}"><span class="box"></span><span class="d">${MON[f.date.getMonth()]} ${f.date.getDate()}</span><span class="r">${f.from}→${f.to}</span><span class="al" style="background:${AL[f.air]}">${f.air}</span></div>`).join("")}</div>`).join("");
+
+const next = fl.find(f => f.up);
+document.getElementById("sticky").innerHTML = next
+  ? `next up:<b>${MON[next.date.getMonth()]} ${next.date.getDate()} ✈</b>${next.from} → ${next.to}<br>(${Math.round((next.date - today) / 864e5)} days!!)`
+  : `<b>all 14</b>flown ✓`;
+document.getElementById("foot").textContent = `${fl.length} flights · ${Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US")} miles · 6 airlines`;
+
+const S=36,LON0=-130,LAT0=50.5,KX=Math.cos(40*Math.PI/180);
+const P=(la,lo)=>[(lo-LON0)*KX*S,(LAT0-la)*S];
+const svg=document.getElementById("map"),NS="http://www.w3.org/2000/svg";
+const mk=(t,a,p=svg)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);p.appendChild(n);return n;};
+const g=mk("g",{filter:"url(#rough)"});
+const coast=[[52,-129],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[27,-114]];
+mk("path",{d:"M"+coast.map(([a,b])=>P(a,b).map(v=>v.toFixed(1)).join(",")).join(" L"),fill:"none",stroke:"var(--pencil)","stroke-width":3,"stroke-linecap":"round"},g);
+const groups={};
+fl.forEach(f=>{
+  const key=[f.from,f.to].sort().join("-"),n=(groups[key]=(groups[key]||0)+1)-1;
+  const [a,b]=key.split("-").map(k=>P(AP[k].lat,AP[k].lon));
+  const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),off=(.1+.08*n)*len;
+  const C=[(a[0]+b[0])/2-dy/len*off,(a[1]+b[1])/2+dx/len*off];
+  const s=P(AP[f.from].lat,AP[f.from].lon),e=P(AP[f.to].lat,AP[f.to].lon);
+  mk("path",{d:`M${s} Q${C} ${e}`,fill:"none",stroke:f.up?"var(--hi)":"var(--blue)","stroke-width":f.up?5:3.4,"stroke-linecap":"round","stroke-dasharray":f.up?"14 12":"none",opacity:f.up?.85:.8},g);
+});
+const visits={};fl.forEach(f=>{visits[f.from]=(visits[f.from]||0)+1;visits[f.to]=(visits[f.to]||0)+1;});
+const LBL={SEA:[34,14,"start"],SFO:[-34,-6,"end"],SJC:[30,44,"start"],DFW:[-30,-36,"end"]};
+Object.entries(AP).forEach(([c,a])=>{
+  const [x,y]=P(a.lat,a.lon);
+  mk("ellipse",{cx:x,cy:y,rx:22,ry:18,fill:"none",stroke:"var(--ink)","stroke-width":3,transform:`rotate(-12 ${x} ${y})`},g);
+  mk("circle",{cx:x,cy:y,r:6,fill:"var(--ink)"},svg);
+  const [ox,oy,an]=LBL[c];
+  const t=mk("text",{x:x+ox,y:y+oy,"text-anchor":an,"font-family":"var(--hand)","font-weight":700,"font-size":58,fill:"var(--ink)"});
+  t.textContent=c;
+  mk("tspan",{"font-size":36,fill:"var(--pencil)",dx:10},t).textContent=`×${visits[c]}`;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>2026 Flights · Boarding Passes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Fourteen paper boarding passes stacked on a desk, oldest at the back; only the top band of each shows, the last one is fully visible. */
+:root { --desk: #1d222e; --paper: #fbfbf8; --ink: #1b1f2a; --mute: #6f7686; --rule: #d9dbe2; --stamp: #c8323c;
+  --display: "Big Shoulders Display", Impact, sans-serif; --mono: "IBM Plex Mono", Menlo, monospace; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+.desk { position: relative; width: 1080px; height: 1920px; background: radial-gradient(ellipse at 50% 35%, #2c3343 0%, var(--desk) 70%); }
+.head { position: absolute; top: 70px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: baseline; color: #fff; }
+.head b { font: 900 76px/1 var(--display); letter-spacing: .02em; }
+.head span { font: 400 24px var(--mono); color: rgba(255,255,255,.65); letter-spacing: .08em; }
+
+.pass { position: absolute; left: 70px; width: 940px; height: 430px; background: var(--paper); border-radius: 18px; box-shadow: 0 -6px 22px rgba(0,0,0,.35); overflow: hidden; color: var(--ink); }
+.band { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 26px; height: 100px; padding: 0 36px 0 30px; border-left: 14px solid var(--c); position: relative; }
+.al { display: inline-grid; place-items: center; width: 70px; height: 48px; border-radius: 9px; font: 500 22px var(--mono); color: #fff; }
+.route { font: 900 60px/1 var(--display); letter-spacing: .02em; display: flex; align-items: center; gap: 16px; }
+.route svg { width: 34px; height: 34px; }
+.when { text-align: right; font: 500 20px/1.2 var(--mono); color: var(--mute); }
+.when b { display: block; font: 900 38px/1 var(--display); color: var(--ink); letter-spacing: .04em; }
+.stamp { position: absolute; right: 200px; top: 22px; font: 900 34px/1 var(--display); letter-spacing: .12em; color: var(--stamp); border: 4px solid var(--stamp); border-radius: 8px; padding: 6px 12px 3px; transform: rotate(-9deg); opacity: .78; }
+.stamp.soon { color: #c47a12; border-color: #c47a12; }
+
+.body { display: grid; grid-template-columns: 1fr 230px; border-top: 2px dashed var(--rule); margin-left: 14px; height: 330px; }
+.fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 26px; padding: 30px 32px; align-content: start; }
+.f small { display: block; font: 400 17px var(--mono); letter-spacing: .12em; color: var(--mute); }
+.f b { font: 900 34px/1.1 var(--display); white-space: nowrap; letter-spacing: .03em; }
+.bars { grid-column: 1 / -1; height: 70px; display: flex; gap: 3px; align-items: stretch; margin-top: 4px; }
+.bars i { background: var(--ink); }
+.stub { border-left: 2px dashed var(--rule); padding: 30px 24px; display: grid; gap: 18px; align-content: start; }
+</style>
+</head>
+<body>
+<div class="desk">
+  <div class="head"><b>2026 · 14 FLIGHTS</b><span id="miles"></span></div>
+  <div id="stack"></div>
+</div>
+<script>
+const AP = { SEA:{lat:47.449,lon:-122.309,city:"Seattle"}, SFO:{lat:37.619,lon:-122.375,city:"San Francisco"}, SJC:{lat:37.363,lon:-121.929,city:"San José"}, DFW:{lat:32.899,lon:-97.040,city:"Dallas"} };
+const AL = {
+  DL:{c:"#C8102E",bg:"#C8102E",name:"Delta"}, UA:{c:"#0033A0",bg:"#0033A0",name:"United"},
+  WN:{c:"#304CB2",bg:"linear-gradient(#304CB2 0 66%, #FFBF27 66% 83%, #C60C30 83%)",name:"Southwest"},
+  AS:{c:"#01426A",bg:"linear-gradient(#01426A 0 76%, #48A9C5 76%)",name:"Alaska"},
+  F9:{c:"#00764F",bg:"#00764F",name:"Frontier"}, AA:{c:"#0078D2",bg:"linear-gradient(#0078D2 0 76%, #C30019 76%)",name:"American"},
+};
+const F = [["01-02","SEA","SJC","WN","WN 4693"],["06-12","SFO","SEA","UA","UA 5579"],["06-23","SEA","SJC","AS","AS 319"],["06-30","SFO","SEA","UA","UA 1389"],["07-07","SEA","SJC","DL","DL 3736"],["08-14","SFO","DFW","F9","F9 2376"],["08-17","DFW","SFO","AA","AA 1949"],["09-05","SJC","SEA","DL","DL"],["09-10","SEA","SJC","DL","DL"],["11-14","SFO","SEA","AS","AS 591"],["11-16","SEA","SFO","UA","UA 499"],["11-23","SJC","SEA","WN","WN 2150"],["12-01","SEA","SJC","DL","DL 3736"],["12-19","SJC","SEA","WN","WN 3914"]];
+const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const today = new Date(); today.setHours(0,0,0,0);
+function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
+const fl = F.map(([md,from,to,air,no])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{from,to,air,no,date,up:date>=today,mi:miles(AP[from],AP[to])};});
+document.getElementById("miles").textContent = `${Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US")} MI`;
+const plane = `<svg viewBox="-12 -10 24 20"><path fill="#1b1f2a" d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z"/></svg>`;
+
+// deterministic barcode from the flight's text
+function bars(seed){let h=0;for(const ch of seed)h=(h*31+ch.charCodeAt(0))>>>0;let out="";for(let i=0;i<64;i++){h=(h*1103515245+12345)>>>0;out+=`<i style="width:${1+(h>>>28)%4}px"></i>`;}return out;}
+
+const STEP = 98, TOP = 170;
+document.getElementById("stack").innerHTML = fl.map((f,i) => {
+  const rot = i === fl.length - 1 ? 0 : (i % 2 ? .9 : -1.1);
+  return `<div class="pass" style="top:${TOP + i*STEP}px;transform:rotate(${rot}deg);--c:${AL[f.air].c}">
+    <div class="band">${`<span class="al" style="background:${AL[f.air].bg}">${f.air}</span>`}
+      <div class="route">${f.from} ${plane} ${f.to}</div>
+      <div class="when"><b>${MON[f.date.getMonth()]} ${String(f.date.getDate()).padStart(2,"0")}</b>${AL[f.air].name}</div>
+      <span class="stamp${f.up ? " soon" : ""}">${f.up ? "SOON" : "FLOWN"}</span>
+    </div>
+    <div class="body">
+      <div class="fields">
+        <div class="f"><small>PASSENGER</small><b>WU/TINGYUN</b></div>
+        <div class="f"><small>FLIGHT</small><b>${f.no.length > 2 ? f.no : AL[f.air].name}</b></div>
+        <div class="f"><small>DATE</small><b>${String(f.date.getDate()).padStart(2,"0")} ${MON[f.date.getMonth()]} 2026</b></div>
+        <div class="f"><small>FROM</small><b>${AP[f.from].city}</b></div>
+        <div class="f"><small>TO</small><b>${AP[f.to].city}</b></div>
+        <div class="f"><small>DISTANCE</small><b>${Math.round(f.mi).toLocaleString("en-US")} MI</b></div>
+        <div class="bars">${bars(f.no + f.from + i)}</div>
+      </div>
+      <div class="stub">
+        <div class="f"><small>FLIGHT ${i + 1}/${fl.length}</small><b>${f.from} → ${f.to}</b></div>
+        <div class="f"><small>CLASS</small><b>ECONOMY</b></div>
+      </div>
+    </div>
+  </div>`;
+}).join("");
+</script>
+</body>
+</html>
