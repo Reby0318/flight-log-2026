@@ -1,5 +1,7 @@
 # 2026 in the Air
 
+**Make your own:** see the [Flight Log Kit](kit/README.md), a copy-paste prompt plus fill-in template (works from your email too).
+
 My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 - **Dec 20 Story pick:** `pictures/final/2026-dec20-story.png` (Americana, light map + contrail; regenerate with `pictures/cinema.html#c7-ctu`)
