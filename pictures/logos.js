@@ -8,7 +8,7 @@
   window.LOGO_SRC = {
     DL: () => LOGO_BASE + "DL.svg",
     WN: () => LOGO_BASE + "WN.svg",
-    AS: () => LOGO_BASE + "AS.svg",
+    AS: () => LOGO_BASE + "AS-mark.svg", // official script + AIRLINES line
     F9: () => LOGO_BASE + "F9.svg",
     AA: () => LOGO_BASE + "AA-mark.svg", // official wordmark + drawn flight symbol
     UA: () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(united),

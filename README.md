@@ -19,4 +19,4 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 14 flights · 4 airports (SEA, SFO, SJC, DFW) · 6 airlines (Delta, United, Southwest, Alaska, Frontier, American)
 
-Airline logos: Delta, Southwest, Alaska, Frontier and American are the official SVGs from Wikimedia Commons (public domain, `pictures/logos-official/`). American uses the official wordmark plus a drawn look-alike of its flight symbol (`AA-mark.svg`). United has no current logo on Commons, so it's a drawn globe + wordmark (`pictures/logos.js`). Maps use us-atlas and world-atlas outlines.
+Airline logos: Delta, Southwest, Alaska, Frontier and American are the official SVGs from Wikimedia Commons (public domain, `pictures/logos-official/`). Alaska uses the official script with an "AIRLINES" line set beneath it (`AS-mark.svg`). American uses the official wordmark plus a drawn look-alike of its flight symbol (`AA-mark.svg`). United has no current logo on Commons, so it's a drawn globe + wordmark (`pictures/logos.js`). Maps use us-atlas and world-atlas outlines.
