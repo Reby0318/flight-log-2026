@@ -10,7 +10,7 @@
     WN: () => LOGO_BASE + "WN.svg",
     AS: () => LOGO_BASE + "AS.svg",
     F9: () => LOGO_BASE + "F9.svg",
-    AA: () => LOGO_BASE + "AA.svg",
+    AA: () => LOGO_BASE + "AA-mark.svg", // official wordmark + drawn flight symbol
     UA: () => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(united),
   };
   window.LOGO_PILL = (code, h = 40, w = 128, extra = "") =>
