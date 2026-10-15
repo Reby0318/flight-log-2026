@@ -36,11 +36,11 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; }
 
 .airl { position: absolute; top: 1160px; left: 80px; right: 80px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 24px; font: 400 30px var(--lf); }
 .airl div { display: flex; align-items: center; gap: 14px; }
-.airl span:last-child { margin-left: auto; color: var(--mute); font-size: 24px; }
+.airl span:last-child { margin-left: auto; color: var(--mute); font-size: 28px; }
 
 .list { position: absolute; top: 1320px; left: 80px; right: 80px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 44px; }
 .cnt { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; border-radius: 11px; background: #111; color: #fff; font: 700 14px/22px "IBM Plex Mono"; text-align: center; padding: 0 4px; }
-.row { display: grid; grid-template-columns: 92px 58px 1fr auto; align-items: center; height: 66px; font: 400 var(--rs, 30px) var(--lf); border-top: var(--rb, 1px solid transparent); white-space: nowrap; }
+.row { display: grid; grid-template-columns: 86px 136px 1fr auto; align-items: center; height: 66px; font: 400 var(--rs, 30px) var(--lf); border-top: var(--rb, 1px solid transparent); white-space: nowrap; }
 .row .d { color: var(--mute); font-size: .8em; }
 .row .r i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; vertical-align: middle; }
 .row .t { font-size: 18px; color: var(--mute); letter-spacing: .08em; text-transform: uppercase; }
@@ -66,7 +66,8 @@ function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,
 const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{m:m-1,d,from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to]),key:[from,to].sort().join("-")};});
 const TOTAL = Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US");
 const pad = n => String(n).padStart(2,"0");
-const badge = (c, n) => LOGO_TILE(c, 44).replace(/<\/span>$/, (n ? `<sup class="cnt">${n}</sup>` : "") + "</span>");
+const LINE = { DL:"#E3132C", UA:"#0B2A7A", WN:"#F5A800", AS:"#1FA0C0", F9:"#2E8B57", AA:"#0078D2" }; // one line color per airline
+const badge = (c, n, h = 40, w = 124) => LOGO_PILL(c, h, w).replace(/<\/span>$/, (n ? `<sup class="cnt">${n}</sup>` : "") + "</span>");
 // The three routes, each drawn once. side: which way the arc bulges (1 = left of travel direction).
 const ROUTES = [
   { key:"SEA-SJC", a:"SEA", b:"SJC", label:"SEA ⇄ SJC", side:-1, k:.2,  ci:0, at:"east" },
@@ -128,8 +129,8 @@ document.getElementById("root").innerHTML = `<style>${th.css || ""}</style>
   <div class="deco">${th.deco || ""}</div>
   <div class="hd"><h1>${th.title}</h1><p>${th.sub || `${fl.length} flights · ${TOTAL} miles · 6 airlines · 4 airports`}</p></div>
   <div class="mapbox" id="mapbox"><svg id="map"></svg></div>
-  <div class="airl">${counts.map(([c,n]) => `<div>${badge(c)}<span>${AL[c].name}</span><span>×${n}</span></div>`).join("")}</div>
-  <div class="list">${[fl.slice(0,7), fl.slice(7)].map(col => `<div>${col.map(f => `<div class="row${f.up ? " up" : ""}"><span class="d">${MON[f.m]} ${f.d}</span>${badge(f.air)}<span class="r"><i style="background:${routeColor(f.key)}"></i>${f.from} → ${f.to}</span><span class="t">${f.up ? "soon" : ""}</span></div>`).join("")}</div>`).join("")}</div>
+  <div class="airl">${counts.map(([c,n]) => `<div>${badge(c, 0, 54, 200)}<span>×${n}</span></div>`).join("")}</div>
+  <div class="list">${[fl.slice(0,7), fl.slice(7)].map(col => `<div>${col.map(f => `<div class="row${f.up ? " up" : ""}"><span class="d">${MON[f.m]} ${f.d}</span>${badge(f.air)}<span class="r"><i style="background:${LINE[f.air]}"></i>${f.from} → ${f.to}</span><span class="t">${f.up ? "soon" : ""}</span></div>`).join("")}</div>`).join("")}</div>
 </div>`;
 
 /* ---------- map (after fonts load, so labels measure correctly) ---------- */
@@ -158,16 +159,22 @@ ROUTES.forEach(r => {
   const A = pt(r.a), B = pt(r.b), dx = B[0]-A[0], dy = B[1]-A[1], len = Math.hypot(dx, dy);
   const nx = -dy/len * r.side, ny = dx/len * r.side;
   const C = [(A[0]+B[0])/2 + nx*r.k*len, (A[1]+B[1])/2 + ny*r.k*len];
-  const col = th.r[r.ci], wdt = 4 + r.fl.length * .9;
-  svg.append("path").attr("class", "route").attr("d", `M${A} Q${C} ${B}`).attr("stroke", col).attr("stroke-width", wdt)
-    .attr("filter", th.rough ? "url(#rough)" : null);
+  const col = "var(--ink)";
+  // one line per flight in its airline's color, fanned out so each stays visible
+  r.fl.forEach((f, i) => {
+    const kk = r.fl.length > 1 ? r.k * (.45 + 1.1 * i / (r.fl.length - 1)) : r.k;
+    const Ci = [(A[0]+B[0])/2 + nx*kk*len, (A[1]+B[1])/2 + ny*kk*len];
+    const d = `M${A} Q${Ci} ${B}`;
+    svg.append("path").attr("class", "route").attr("d", d).attr("stroke", "#fff").attr("stroke-width", 8).attr("opacity", .85).attr("filter", th.rough ? "url(#rough)" : null);
+    svg.append("path").attr("class", "route").attr("d", d).attr("stroke", LINE[f.air]).attr("stroke-width", 4.5).attr("filter", th.rough ? "url(#rough)" : null);
+  });
   // callout next to the arc's middle
   const M = [.25*A[0] + .5*C[0] + .25*B[0], .25*A[1] + .5*C[1] + .25*B[1]];
   const flown = r.fl.filter(f => !f.up).length, booked = r.fl.length - flown;
   const airs = {}; r.fl.forEach(f => airs[f.air] = (airs[f.air] || 0) + 1);
   const el = document.createElement("div");
   el.className = "call"; el.style.setProperty("--rc", col);
-  el.innerHTML = `<b>${r.label}</b><small>${r.fl.length} ${r.fl.length === 1 ? "flight" : "flights"}${booked ? ` · ${flown} flown · ${booked} booked` : ""}</small><div class="bs">${Object.entries(airs).sort((a,b)=>b[1]-a[1]).map(([c,n]) => badge(c, n > 1 ? n : 0)).join("")}</div>`;
+  el.innerHTML = `<b>${r.label}</b><small>${r.fl.length} ${r.fl.length === 1 ? "flight" : "flights"}${booked ? ` · ${flown} flown · ${booked} booked` : ""}</small><div class="bs">${Object.entries(airs).sort((a,b)=>b[1]-a[1]).map(([c,n]) => badge(c, n > 1 ? n : 0, 36, 112)).join("")}</div>`;
   box.appendChild(el);
   const w = el.offsetWidth, h = el.offsetHeight;
   let x, y, ax, ay;
@@ -178,8 +185,8 @@ ROUTES.forEach(r => {
   el.style.left = x + "px"; el.style.top = y + "px";
   // thin leader from the callout to the middle of its route
   ax = Math.max(x, Math.min(x + w, M[0])); ay = Math.max(y, Math.min(y + h, M[1]));
-  svg.insert("line", ".route").attr("x1", ax).attr("y1", ay).attr("x2", M[0]).attr("y2", M[1]).attr("stroke", col).attr("stroke-width", 2).attr("stroke-dasharray", "3 5");
-  svg.append("circle").attr("cx", M[0]).attr("cy", M[1]).attr("r", 5).attr("fill", col);
+  svg.insert("line", ".route").attr("x1", ax).attr("y1", ay).attr("x2", M[0]).attr("y2", M[1]).attr("stroke", col).attr("stroke-width", 2).attr("stroke-dasharray", "3 5").attr("opacity", .6);
+  
 });
 Object.entries(AP).forEach(([c, a]) => {
   const [x, y] = pt(c);

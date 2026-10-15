@@ -9,6 +9,7 @@
 <script src="world-countries.js"></script>
 <script src="us-states.js"></script>
 <script src="logos.js"></script>
+<script>const LINE = { DL:"#E3132C", UA:"#0B2A7A", WN:"#F5A800", AS:"#1FA0C0", F9:"#2E8B57", AA:"#0078D2" }; // one line color per airline</script>
 <style>
 /* Teal kids-logbook page with doodles; a purple app-style passport card (tabs, plane ticker, real map, airline coins, stats); a stamp collage at the bottom. */
 :root {
@@ -37,7 +38,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; }
 .ticker .code::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 4px solid currentColor; }
 .mapbox { position: relative; margin: 20px 30px 0; height: 370px; border-radius: 26px; overflow: hidden; background: var(--water); }
 .mapbox svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.coins { display: flex; justify-content: center; gap: 0; padding: 22px 0 0; }
+.coins { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 22px 30px 0; }
 .coin { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 5px solid var(--card); margin-left: -8px; position: relative; }
 .coin > span { width: 70%; height: 70%; display: block; }
 .coin sup { position: absolute; top: -6px; right: -6px; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: var(--card); font: 700 15px/26px var(--ui); text-align: center; }
@@ -99,7 +100,7 @@ document.getElementById("ticker").innerHTML = fl.map((f,i) => planeSVG(grad[i]) 
 
 /* ---------- airline coins ---------- */
 const counts = Object.keys(AL).map(c=>[c, fl.filter(f=>f.air===c).length]).sort((a,b)=>b[1]-a[1]);
-document.getElementById("coins").innerHTML = counts.map(([c,n]) => `<span class="coin"><span>${LOGO[c].replace("<svg ", '<svg width="100%" height="100%" ')}</span><sup>${n}</sup></span>`).join("");
+document.getElementById("coins").innerHTML = counts.map(([c,n]) => LOGO_PILL(c, 54, 142).replace(/<\/span>$/, `<sup style="position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:#ff8fd1;color:#2a1659;font:700 15px/26px DM Sans;text-align:center">${n}</sup></span>`)).join("");
 
 /* ---------- stats ---------- */
 document.getElementById("grid").innerHTML = `
@@ -129,7 +130,8 @@ document.fonts.ready.then(() => {
     const [a,b] = key.split("-").map(pt), dx=b[0]-a[0], dy=b[1]-a[1], len=Math.hypot(dx,dy);
     const side = key === "SEA-SJC" ? -1 : 1, k = .12 + .07*n;
     const C = [(a[0]+b[0])/2 - dy/len*k*len*side, (a[1]+b[1])/2 + dx/len*k*len*side];
-    svg.append("path").attr("d", `M${a} Q${C} ${b}`).attr("fill","none").attr("stroke", AL[f.air].c).attr("stroke-width", 3).attr("stroke-linecap","round").attr("opacity", .9);
+    svg.append("path").attr("d", `M${a} Q${C} ${b}`).attr("fill","none").attr("stroke", "#fff").attr("stroke-width", 7).attr("stroke-linecap","round").attr("opacity", .9);
+    svg.append("path").attr("d", `M${a} Q${C} ${b}`).attr("fill","none").attr("stroke", LINE[f.air]).attr("stroke-width", 4).attr("stroke-linecap","round");
   });
   const LBL = { SEA:[16,-10,"start"], SFO:[-14,-8,"end"], SJC:[14,26,"start"], DFW:[-16,-44,"end"] };
   Object.entries(AP).forEach(([c,a]) => {

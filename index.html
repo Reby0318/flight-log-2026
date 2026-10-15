@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>[hidden]{display:none!important}</style>
+<script>window.LOGO_BASE = "pictures/logos-official/";</script>
 <title>2026 in the Air</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="pictures/us-states.js"></script>
+<script src="pictures/world-countries.js"></script>
+<script src="pictures/logos.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -13,8 +19,9 @@
 :root {
   --bg: #eef1f5;
   --surface: #ffffff;
-  --land: #e2e7ee;
-  --ocean: #eef1f5;
+  --land: #f4f6f9;
+  --land2: #e8ebf0;
+  --ocean: #d9e6f2;
   --ink: #17223a;
   --muted: #5d6a82;
   --line: #cfd6e1;
@@ -27,14 +34,14 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1524; --surface: #151f33; --land: #1a253b; --ocean: #0e1524;
+    --bg: #0e1524; --surface: #151f33; --land: #1d2940; --land2: #151e31; --ocean: #0a1120;
     --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
     --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e1524; --surface: #151f33; --land: #1a253b; --ocean: #0e1524;
+  --bg: #0e1524; --surface: #151f33; --land: #1d2940; --land2: #151e31; --ocean: #0a1120;
   --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
   --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
   color-scheme: dark;
@@ -73,14 +80,15 @@ main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); g
 svg { display: block; width: 100%; height: auto; }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i { display: inline-block; width: 22px; height: 0; border-top: 2px solid var(--flown); }
-.legend i.up { border-top: 2px dashed var(--upcoming); }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 4px solid var(--flown); }
+.legend i.up { border-top: 3px dashed var(--muted); }
 
 .arc { fill: none; stroke-width: 2; transition: opacity .2s, stroke-width .2s; }
-.arc.flown { stroke: var(--flown); opacity: .55; }
-.arc.up { stroke: var(--upcoming); stroke-dasharray: 6 5; opacity: .9; }
-svg.focus .arc { opacity: .12; }
-svg.focus .arc.on { opacity: 1; stroke-width: 3.5; }
+.arc { stroke-width: 4; stroke-linecap: round; }
+.arc.flown { opacity: .95; }
+.arc.up { stroke-dasharray: 8 6; opacity: .95; }
+svg.focus .arc { opacity: .15; }
+svg.focus .arc.on { opacity: 1; stroke-width: 6; }
 
 .log { display: grid; gap: 10px; }
 .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
@@ -134,9 +142,9 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
     <section class="mapcard" aria-label="Route map">
       <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of 2026 flight routes between Seattle, San Francisco, San Jose and Dallas–Fort Worth"></svg>
       <div class="legend">
-        <span><i></i>Flown</span>
-        <span><i class="up"></i>Upcoming</span>
-        <span>Dot size = times through that airport</span>
+        <span>Line color = airline</span>
+        <span><i style="border-top-color:#E3132C"></i>Delta</span><span><i style="border-top-color:#0B2A7A"></i>United</span><span><i style="border-top-color:#F5A800"></i>Southwest</span><span><i style="border-top-color:#1FA0C0"></i>Alaska</span><span><i style="border-top-color:#2E8B57"></i>Frontier</span><span><i style="border-top-color:#0078D2"></i>American</span>
+        <span><i class="up"></i>Dashed = upcoming</span>
       </div>
     </section>
 
@@ -188,7 +196,7 @@ const AL = {
   Frontier: { c: "F9", bg: "#00764F" },
   American: { c: "AA", bg: "linear-gradient(#0078D2 0 76%, #C30019 76%)" },
 };
-const badge = name => `<span class="al" style="background:${AL[name].bg}" title="${name}">${AL[name].c}</span>`;
+const badge = name => LOGO_PILL(AL[name].c, 26, 92, "margin-right:6px");
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -234,70 +242,66 @@ const fmt = n => Math.round(n).toLocaleString("en-US");
   }).join("");
 })();
 
-/* ---------- map ---------- */
-const S = 36, LON0 = -127, LAT0 = 50.5, KX = Math.cos(40 * Math.PI / 180);
-const P = (lat, lon) => [(lon - LON0) * KX * S, (LAT0 - lat) * S];
+/* ---------- map: real coastlines and state lines, one line per flight in its airline's color ---------- */
+const LINE = { Delta:"#E3132C", United:"#0B2A7A", Southwest:"#F5A800", Alaska:"#1FA0C0", Frontier:"#2E8B57", American:"#0078D2" };
 const svg = document.getElementById("map");
-const NS = "http://www.w3.org/2000/svg";
-const el = (tag, attrs, parent = svg) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
-
 (function map() {
-  el("rect", { x: 0, y: 0, width: 910, height: 756, fill: "var(--ocean)" });
-  // Simplified Pacific coastline, north to south; land is everything east of it.
-  const coast = [[50.5,-127.6],[48.4,-124.7],[47.9,-124.6],[46.3,-124.05],[45,-123.95],[43.4,-124.25],[42,-124.2],[40.4,-124.4],[39,-123.7],[38,-122.95],[37.8,-122.5],[37.2,-122.4],[36.6,-121.9],[35.6,-121.2],[34.45,-120.5],[34,-118.5],[33.6,-117.9],[32.5,-117.1],[29.5,-115.4]];
-  const pts = coast.map(([la, lo]) => P(la, lo));
-  const d = "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join(" L") + " L910,756 L910,0 Z";
-  el("path", { d, fill: "var(--land)", stroke: "var(--line)", "stroke-width": 1.5 });
-
-  // graticule
-  const g = el("g", { stroke: "var(--line)", "stroke-width": 1, "stroke-dasharray": "2 6", opacity: .8 });
-  for (let lat = 30; lat <= 50; lat += 5) { const y = P(lat, 0)[1]; el("line", { x1: 0, x2: 910, y1: y, y2: y }, g); el("text", { x: 904, y: y - 5, "text-anchor": "end", "font-family": "var(--mono)", "font-size": 11, fill: "var(--muted)", stroke: "none" }, svg).textContent = lat + "°N"; }
-  for (let lon = -125; lon <= -95; lon += 5) { const x = P(0, lon)[0]; el("line", { x1: x, x2: x, y1: 0, y2: 756 }, g); el("text", { x: x + 4, y: 748, "font-family": "var(--mono)", "font-size": 11, fill: "var(--muted)" }).textContent = Math.abs(lon) + "°W"; }
-
-  const ocean = el("text", { x: 0, y: 0, transform: `translate(${P(41, -126.2).join(",")}) rotate(-90)`, "text-anchor": "middle", "font-family": "var(--mono)", "font-size": 13, "letter-spacing": "6", fill: "var(--muted)", opacity: .7 });
-  ocean.textContent = "PACIFIC OCEAN";
-
-  // arrowheads
-  const defs = el("defs", {});
-  [["flown", "var(--flown)"], ["up", "var(--upcoming)"]].forEach(([id, c]) => {
-    const m = el("marker", { id: "ah-" + id, viewBox: "0 0 10 10", refX: 8, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse" }, defs);
-    el("path", { d: "M0,0 L10,5 L0,10 z", fill: c }, m);
+  const W = 910, H = 756, d3s = d3.select(svg);
+  const proj = d3.geoConicConformal().parallels([33, 45]).rotate([110, 0])
+    .fitExtent([[16, 16], [W - 16, H - 16]], { type: "MultiPoint", coordinates: [[-127.5, 31], [-93.8, 31], [-93.8, 49.4], [-127.5, 49.4]] });
+  const path = d3.geoPath(proj);
+  d3s.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--ocean)");
+  d3s.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path")
+    .attr("d", path).attr("fill", d => d.id === "840" ? "var(--land)" : "var(--land2)").attr("stroke", "var(--line)").attr("stroke-width", 1);
+  d3s.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (x, y) => x !== y))).attr("fill", "none").attr("stroke", "var(--line)").attr("stroke-width", 1.2);
+  const pt = c => proj([AIRPORTS[c].lon, AIRPORTS[c].lat]);
+  const ROUTES = [
+    { key: "SEA-SJC", a: "SEA", b: "SJC", side: -1, k: .2, at: "east" },
+    { key: "SEA-SFO", a: "SEA", b: "SFO", side: 1, k: .2, at: "sw" },
+    { key: "DFW-SFO", a: "SFO", b: "DFW", side: -1, k: .22, at: "south" },
+  ];
+  const halo = d3s.append("g"), lines = d3s.append("g"), labels = d3s.append("g");
+  ROUTES.forEach(r => {
+    const fl = FLIGHTS.filter(f => [f.from, f.to].sort().join("-") === r.key);
+    const A = pt(r.a), B = pt(r.b), dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+    const nx = -dy / len * r.side, ny = dx / len * r.side;
+    fl.forEach((f, i) => {
+      const kk = fl.length > 1 ? r.k * (.45 + 1.1 * i / (fl.length - 1)) : r.k;
+      const C = [(A[0] + B[0]) / 2 + nx * kk * len, (A[1] + B[1]) / 2 + ny * kk * len];
+      const d = `M${A} Q${C} ${B}`;
+      halo.append("path").attr("d", d).attr("fill", "none").attr("stroke", "var(--surface)").attr("stroke-width", 8).attr("stroke-linecap", "round").style("pointer-events", "none");
+      const p = lines.append("path").attr("d", d).attr("class", "arc" + (f.up ? " up" : " flown")).attr("data-i", f.i).style("stroke", LINE[f.air]);
+      p.append("title").text(`${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}${f.up ? " (upcoming)" : ""}`);
+      p.on("mouseenter", () => focus(f.i)).on("mouseleave", () => focus(null));
+    });
+    // route label with the airlines that flew it
+    const C0 = [(A[0] + B[0]) / 2 + nx * r.k * len, (A[1] + B[1]) / 2 + ny * r.k * len];
+    const M = [.25 * A[0] + .5 * C0[0] + .25 * B[0], .25 * A[1] + .5 * C0[1] + .25 * B[1]];
+    const airs = {}; fl.forEach(f => airs[f.air] = (airs[f.air] || 0) + 1);
+    const list = Object.entries(airs).sort((x, y) => y[1] - x[1]);
+    const w = 24 + list.length * 104, h = 92;
+    let x = r.at === "sw" ? 14 : r.at === "east" ? M[0] + 60 : M[0] - w / 2 - 30;
+    let y = r.at === "sw" ? pt("SFO")[1] + 70 : r.at === "east" ? M[1] - h / 2 - 40 : M[1] + 60;
+    x = Math.max(8, Math.min(W - w - 8, x)); y = Math.max(8, Math.min(H - h - 8, y));
+    labels.append("line").attr("x1", Math.max(x, Math.min(x + w, M[0]))).attr("y1", Math.max(y, Math.min(y + h, M[1]))).attr("x2", M[0]).attr("y2", M[1]).attr("stroke", "var(--muted)").attr("stroke-dasharray", "3 5");
+    const g = labels.append("g").attr("transform", `translate(${x},${y})`);
+    g.append("rect").attr("width", w).attr("height", h).attr("rx", 12).attr("fill", "var(--surface)").attr("stroke", "var(--line)").attr("stroke-width", 1.5);
+    g.append("text").attr("x", 14).attr("y", 30).attr("font-family", "var(--display)").attr("font-weight", 800).attr("font-size", 26).attr("fill", "var(--ink)").text(`${r.a} ⇄ ${r.b}`);
+    g.append("text").attr("x", w - 14).attr("y", 30).attr("text-anchor", "end").attr("font-family", "var(--mono)").attr("font-size", 15).attr("fill", "var(--muted)").text(`${fl.length} flight${fl.length > 1 ? "s" : ""}`);
+    list.forEach(([air, n], j) => {
+      const bx = 12 + j * 104;
+      g.append("rect").attr("x", bx).attr("y", 44).attr("width", 96).attr("height", 34).attr("rx", 9).attr("fill", "#fff").attr("stroke", LINE[air]).attr("stroke-width", 2);
+      g.append("image").attr("href", LOGO_SRC[AL[air].c]()).attr("x", bx + 8).attr("y", 50).attr("width", 80).attr("height", 22).attr("preserveAspectRatio", "xMidYMid meet");
+      if (n > 1) { g.append("circle").attr("cx", bx + 94).attr("cy", 46).attr("r", 11).attr("fill", "var(--ink)"); g.append("text").attr("x", bx + 94).attr("y", 51).attr("text-anchor", "middle").attr("font-family", "var(--mono)").attr("font-size", 13).attr("font-weight", 700).attr("fill", "var(--surface)").text(n); }
+    });
   });
-
-  // arcs: fan out repeated pairs so each flight stays visible
-  const groups = {};
-  const arcs = el("g", {});
-  FLIGHTS.forEach(f => {
-    const key = [f.from, f.to].sort().join("-");
-    const n = (groups[key] = (groups[key] || 0) + 1) - 1;
-    const [ca, cb] = key.split("-").map(k => AIRPORTS[k]);
-    const A = P(ca.lat, ca.lon), B = P(cb.lat, cb.lon);
-    const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
-    const k = 0.10 + 0.075 * n;
-    const nx = -dy / len, ny = dx / len;
-    const C = [(A[0] + B[0]) / 2 + nx * k * len, (A[1] + B[1]) / 2 + ny * k * len];
-    const fromP = P(AIRPORTS[f.from].lat, AIRPORTS[f.from].lon), toP = P(AIRPORTS[f.to].lat, AIRPORTS[f.to].lon);
-    const path = el("path", {
-      d: `M${fromP[0].toFixed(1)},${fromP[1].toFixed(1)} Q${C[0].toFixed(1)},${C[1].toFixed(1)} ${toP[0].toFixed(1)},${toP[1].toFixed(1)}`,
-      class: "arc " + (f.up ? "up" : "flown"), "marker-end": `url(#ah-${f.up ? "up" : "flown"})`, "data-i": f.i,
-    }, arcs);
-    el("title", {}, path).textContent = `${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}`;
-    path.addEventListener("mouseenter", () => focus(f.i));
-    path.addEventListener("mouseleave", () => focus(null));
-  });
-
-  // airports
-  const visits = {};
-  FLIGHTS.forEach(f => { visits[f.from] = (visits[f.from] || 0) + 1; visits[f.to] = (visits[f.to] || 0) + 1; });
-  const LABEL = { SEA: [14, 6, "start"], SFO: [-14, -2, "end"], SJC: [14, 16, "start"], DFW: [-16, -18, "end"] };
-  Object.entries(AIRPORTS).forEach(([code, a]) => {
-    const [x, y] = P(a.lat, a.lon), r = 5 + Math.sqrt(visits[code]) * 2.2;
-    el("circle", { cx: x, cy: y, r: r + 4, fill: "var(--surface)", opacity: .9 });
-    el("circle", { cx: x, cy: y, r, fill: "var(--ink)" });
-    const [ox, oy, anchor] = LABEL[code];
-    const t = el("text", { x: x + ox + (anchor === "start" ? r : -r), y: y + oy, "text-anchor": anchor, fill: "var(--ink)" });
-    const t1 = el("tspan", { "font-family": "var(--display)", "font-weight": 800, "font-size": 26 }, t); t1.textContent = code;
-    const t2 = el("tspan", { x: x + ox + (anchor === "start" ? r : -r), dy: 16, "font-family": "var(--body)", "font-size": 12, fill: "var(--muted)" }, t); t2.textContent = `${a.city} · ${visits[code]}×`;
+  const L = { SEA: [16, -12, "start"], SFO: [-16, -6, "end"], SJC: [16, 28, "start"], DFW: [-16, 38, "end"] };
+  Object.entries(AIRPORTS).forEach(([c, a]) => {
+    const [x, y] = pt(c);
+    labels.append("circle").attr("cx", x).attr("cy", y).attr("r", 9).attr("fill", "var(--surface)").attr("stroke", "var(--ink)").attr("stroke-width", 3.5);
+    const t = labels.append("text").attr("x", x + L[c][0]).attr("y", y + L[c][1]).attr("text-anchor", L[c][2]).attr("fill", "var(--ink)");
+    t.append("tspan").attr("font-family", "var(--display)").attr("font-weight", 800).attr("font-size", 30).text(c);
+    t.append("tspan").attr("x", x + L[c][0]).attr("dy", 20).attr("font-family", "var(--body)").attr("font-size", 14).attr("fill", "var(--muted)").text(a.city);
   });
 })();
 
