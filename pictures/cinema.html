@@ -224,8 +224,8 @@ document.getElementById("pg").insertAdjacentHTML("beforeend", `
   else document.querySelectorAll('svg[style*="z-index:10"]').forEach(s => s.style.filter = `saturate(${TH.sat ?? 1})`);
 }
 
-/* ---------- simple mode: only the essentials ---------- */
-{
+/* ---------- simple mode (default; add "x" to the hash for the full version) ---------- */
+if (!FX.has("x")) {
   const css = document.createElement("style");
   css.textContent = `.doodle, .burst, .cap, svg[style*="z-index:10"] { display: none !important; }
     #map [fill="#d63a3a"], #map [stroke="#d63a3a"] { display: none; }`;

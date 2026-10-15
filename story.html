@@ -155,11 +155,11 @@ const FLIGHTS = [
   { d: "2026-06-12", from: "SFO", to: "SEA", air: "UA", no: "UA 5579", t: "10:59 PM" },
   { d: "2026-06-23", from: "SEA", to: "SJC", air: "AS", no: "AS 319", t: "3:42 PM" },
   { d: "2026-06-30", from: "SFO", to: "SEA", air: "UA", no: "UA 1389", t: "10:59 PM" },
-  { d: "2026-07-07", from: "SEA", to: "SJC", air: "DL", no: "DL 3736" },
-  { d: "2026-08-14", from: "SFO", to: "DFW", air: "F9", no: "F9 2376" },
+  { d: "2026-07-07", from: "SEA", to: "SJC", air: "DL", no: "DL 3736", t: "8:25 AM" },
+  { d: "2026-08-14", from: "SFO", to: "DFW", air: "F9", no: "F9 2376", t: "12:54 AM" },
   { d: "2026-08-17", from: "DFW", to: "SFO", air: "AA", no: "AA 1949", t: "7:10 AM" },
-  { d: "2026-09-05", from: "SJC", to: "SEA", air: "DL", no: "Delta" },
-  { d: "2026-09-10", from: "SEA", to: "SJC", air: "DL", no: "Delta" },
+  { d: "2026-09-05", from: "SJC", to: "SEA", air: "DL", no: "Delta", t: "8:53 PM" },
+  { d: "2026-09-10", from: "SEA", to: "SJC", air: "DL", no: "Delta", t: "8:25 AM" },
   { d: "2026-11-14", from: "SFO", to: "SEA", air: "AS", no: "AS 591", t: "6:48 PM" },
   { d: "2026-11-16", from: "SEA", to: "SFO", air: "UA", no: "UA 499", t: "7:00 AM" },
   { d: "2026-11-23", from: "SJC", to: "SEA", air: "WN", no: "WN 2150", t: "6:00 AM" },
@@ -176,7 +176,7 @@ const TRIPS = [
   { m: "December", sky: "night", f: [12, 13], cap: "<b>Last flight of the year</b> lands in Seattle at 12:05 AM." },
 ];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const today = new Date(); today.setHours(0, 0, 0, 0);
+const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 function miles(a, b) { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * 3958.8 * Math.asin(Math.sqrt(h)); }
 FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = f.date >= today; f.mi = miles(AP[f.from], AP[f.to]); });

@@ -75,7 +75,7 @@ const AP = { SEA:{lat:47.449,lon:-122.309}, SFO:{lat:37.619,lon:-122.375}, SJC:{
 const AL = { DL:"#C8102E", UA:"#0033A0", WN:"linear-gradient(#304CB2 0 66%, #FFBF27 66% 83%, #C60C30 83%)", AS:"linear-gradient(#01426A 0 76%, #48A9C5 76%)", F9:"#00764F", AA:"linear-gradient(#0078D2 0 76%, #C30019 76%)" };
 const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
 const MON = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-const today = new Date(); today.setHours(0,0,0,0);
+const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
 function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
 const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to])};});
 

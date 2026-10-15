@@ -281,11 +281,11 @@ const FLIGHTS = [
   { d: "2026-06-12", from: "SFO", to: "SEA", air: "United", no: "UA 5579", t: "10:59 PM → 1:29 AM" },
   { d: "2026-06-23", from: "SEA", to: "SJC", air: "Alaska", no: "AS 319", t: "3:42 PM → 5:53 PM", note: "Rebooked from United SEA → SFO" },
   { d: "2026-06-30", from: "SFO", to: "SEA", air: "United", no: "UA 1389", t: "10:59 PM → 1:13 AM" },
-  { d: "2026-07-07", from: "SEA", to: "SJC", air: "Delta", no: "DL 3736" },
-  { d: "2026-08-14", from: "SFO", to: "DFW", air: "Frontier", no: "F9 2376" },
+  { d: "2026-07-07", from: "SEA", to: "SJC", air: "Delta", no: "DL 3736", t: "8:25 AM → 10:50 AM" },
+  { d: "2026-08-14", from: "SFO", to: "DFW", air: "Frontier", no: "F9 2376", t: "12:54 AM → 6:30 AM" },
   { d: "2026-08-17", from: "DFW", to: "SFO", air: "American", no: "AA 1949", t: "7:10 AM → 8:50 AM" },
-  { d: "2026-09-05", from: "SJC", to: "SEA", air: "Delta" },
-  { d: "2026-09-10", from: "SEA", to: "SJC", air: "Delta" },
+  { d: "2026-09-05", from: "SJC", to: "SEA", air: "Delta", t: "8:53 PM → 11:19 PM" },
+  { d: "2026-09-10", from: "SEA", to: "SJC", air: "Delta", t: "8:25 AM → 10:52 AM" },
   { d: "2026-11-14", from: "SFO", to: "SEA", air: "Alaska", no: "AS 591", t: "6:48 PM → 9:03 PM" },
   { d: "2026-11-16", from: "SEA", to: "SFO", air: "United", no: "UA 499", t: "7:00 AM → 9:19 AM" },
   { d: "2026-11-23", from: "SJC", to: "SEA", air: "Southwest", no: "WN 2150", t: "6:00 AM → 8:30 AM" },
@@ -304,7 +304,7 @@ const AL = {
 const badge = name => LOGO_PILL(AL[name].c, 26, 92, "margin-right:6px");
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const today = new Date(); today.setHours(0, 0, 0, 0);
+const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = f.date >= today; f.mi = miles(AIRPORTS[f.from], AIRPORTS[f.to]); });
 
@@ -474,8 +474,8 @@ function renderAchs() {
     { ic: "✈", c: "#2b4c8c", t: "First takeoff", d: "Fly your first flight", have: flownF.length, need: 1 },
     { ic: "10", c: "#7b4bb3", t: "Frequent flyer", d: "Fly 10 flights", have: flownF.length, need: 10 },
     { ic: "⇄", c: "#1fa0c0", t: "Commuter", d: "Fly one route 5 times", have: Math.max(0, ...Object.values(routeCounts)), need: 5 },
-    { ic: "☾", c: "#3b2a7a", t: "Red-eye survivor", d: "Take 2 flights leaving after 10 PM", have: flownF.filter(f => depHour(f) >= 22).length, need: 2 },
-    { ic: "☀", c: "#f5a800", t: "Early bird", d: "Take off before 7 AM", have: flownF.filter(f => depHour(f) !== null && depHour(f) < 7).length, need: 1 },
+    { ic: "☾", c: "#3b2a7a", t: "Red-eye survivor", d: "Take 2 overnight flights (10 PM–4 AM)", have: flownF.filter(f => depHour(f) !== null && (depHour(f) >= 22 || depHour(f) < 4)).length, need: 2 },
+    { ic: "☀", c: "#f5a800", t: "Early bird", d: "Take off between 4 and 7 AM", have: flownF.filter(f => depHour(f) !== null && depHour(f) >= 4 && depHour(f) < 7).length, need: 1 },
     { ic: "6", c: "#e3132c", t: "Airline collector", d: "Fly 6 different airlines", have: new Set(flownF.map(f => f.air)).size, need: 6 },
     { ic: "★", c: "#2e8b57", t: "Lone Star", d: "Land in Texas", have: flownF.some(f => f.to === "DFW") ? 1 : 0, need: 1 },
     { ic: "◐", c: "#0078d2", t: "Halfway around", d: "Fly 12,450 miles (half the Earth)", have: Math.round(flownMi), need: 12450 },
@@ -570,11 +570,11 @@ const FACTS = [
   "Delta flew you the most this year: 4 flights.",
   "SEA ⇄ SJC is your most-flown route: 8 flights.",
   "Longest flight: SFO → DFW, 1,461 miles.",
-  "Two red-eyes, both leaving SFO at 10:59 PM.",
+  "Three red-eyes: two 10:59 PM departures from SFO and a 12:54 AM flight to Dallas.",
   `${fmt(FLIGHTS.reduce((s, f) => s + f.mi, 0))} miles is about 45% of the way around the Earth.`,
   "You pass through Seattle on 12 of 14 flights.",
   "June and November tie for busiest month: 3 flights each.",
-  "Earliest takeoff: 6:00 AM on Nov 23.",
+  "Earliest takeoff: 12:54 AM on Aug 14, the overnight flight to Dallas.",
   "Six airlines in one year. That's a full collection.",
   "Your last flight of 2026 lands at 12:05 AM on Dec 20.",
 ];

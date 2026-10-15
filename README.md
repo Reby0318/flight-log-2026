@@ -2,7 +2,7 @@
 
 **Make your own:** see the [Flight Log Kit](kit/README.md), a copy-paste prompt plus fill-in template (works from your email too).
 
-My 2026 flights, pulled from airline and Chase Travel confirmation emails.
+My 2026 flights (all 14 flown; everything is shown as of Dec 20, 2026), pulled from airline and Chase Travel confirmation emails.
 
 - **Dec 20 Story pick:** `pictures/final/2026-dec20-story.png` (Americana, light map + contrail; regenerate with `pictures/cinema.html#c7-ctu`)
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.
@@ -10,7 +10,7 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 - `pictures/americana/` — look #7 with Americana: "FLY·2026" license plate, interstate shield, Washington/California/Texas state patches (`pictures/cinema.html#c7-ctu` etc.)
 - `pictures/bold/` — look #7 with bolder options: night map, season-pass ticket, contrail (`pictures/cinema.html#c7-nct` etc.)
 - `pictures/simple/` — the same 20 looks, simplified to the essentials (title, map + logos, one note, passport, receipt)
-- `pictures/cinema/` — the collage in 20 restrained TV-series and superhero-blockbuster looks (`pictures/cinema.html#c1`…`#c20`)
+- `pictures/cinema/` — the collage in 20 restrained TV-series and superhero-blockbuster looks (`pictures/cinema.html#c1-x`…`#c20-x`)
 - `pictures/tv/` — "Season 2026" TV-series pictures: title card, map on a TV screen, episode guide (one flight per episode); 10 looks incl. cartoon sci-fi portal styles (`pictures/tv.html#s1`…`#s10`)
 - `pictures/collages/` — 20 looks of the collage (easy, lively, luxury, anime, fun, beautiful, attractive, quality, interesting); overview in `00-overview.png`; regenerate with `pictures/collages.html#c1`…`#c20`
 - `pictures/final/2026-flights-collage.png` — "2026, flights I have taken / in the air.": sticky notes, itemized receipt and passport stamps around a pinned map (`pictures/collage.html`)

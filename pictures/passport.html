@@ -85,7 +85,7 @@ const AL = {
   F9:{name:"Frontier",c:"#00764F",bg:"#00764F"}, AA:{name:"American",c:"#0078D2",bg:"linear-gradient(#0078D2 0 72%, #C30019 72%)"},
 };
 // minutes in the air: scheduled times from the confirmation emails; "est" ones use the same route's typical time
-const F = [["01-02","SEA","SJC","WN",140,1],["06-12","SFO","SEA","UA",150],["06-23","SEA","SJC","AS",131],["06-30","SFO","SEA","UA",134],["07-07","SEA","SJC","DL",143,1],["08-14","SFO","DFW","F9",210,1],["08-17","DFW","SFO","AA",220],["09-05","SJC","SEA","DL",135,1],["09-10","SEA","SJC","DL",140,1],["11-14","SFO","SEA","AS",135],["11-16","SEA","SFO","UA",139],["11-23","SJC","SEA","WN",150],["12-01","SEA","SJC","DL",143],["12-19","SJC","SEA","WN",140]];
+const F = [["01-02","SEA","SJC","WN",140,1],["06-12","SFO","SEA","UA",150],["06-23","SEA","SJC","AS",131],["06-30","SFO","SEA","UA",134],["07-07","SEA","SJC","DL",145],["08-14","SFO","DFW","F9",216],["08-17","DFW","SFO","AA",220],["09-05","SJC","SEA","DL",146],["09-10","SEA","SJC","DL",147],["11-14","SFO","SEA","AS",135],["11-16","SEA","SFO","UA",139],["11-23","SJC","SEA","WN",150],["12-01","SEA","SJC","DL",143],["12-19","SJC","SEA","WN",140]];
 const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
 const fl = F.map(([md,from,to,air,min,est])=>{const [m,d]=md.split("-").map(Number);return{m:m-1,d,from,to,air,min,est:!!est,mi:miles(AP[from],AP[to])};});
@@ -106,7 +106,7 @@ document.getElementById("coins").innerHTML = counts.map(([c,n]) => LOGO_PILL(c, 
 document.getElementById("grid").innerHTML = `
   <div><small>FLIGHTS</small><b>${fl.length}</b></div>
   <div class="w2" style="grid-column:2 / span 3"><small>FLIGHT DISTANCE</small><b>${nf(totalKm).replace(",", " ")}<u>km</u></b><div class="note">${nf(totalMi)} miles</div></div>
-  <div class="w2"><small>FLIGHT TIME</small><b>${Math.floor(totalMin/60)}h ${totalMin%60}m</b><div class="note">scheduled times · 5 estimated</div></div>
+  <div class="w2"><small>FLIGHT TIME</small><b>${Math.floor(totalMin/60)}h ${totalMin%60}m</b><div class="note">scheduled times · ${fl.filter(f=>f.est).length} estimated</div></div>
   <div><small>AIRPORTS</small><b>4</b></div>
   <div><small>AIRLINES</small><b>6</b></div>`;
 

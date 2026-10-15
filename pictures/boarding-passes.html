@@ -49,7 +49,7 @@ const AL = {
 };
 const F = [["01-02","SEA","SJC","WN","WN 4693"],["06-12","SFO","SEA","UA","UA 5579"],["06-23","SEA","SJC","AS","AS 319"],["06-30","SFO","SEA","UA","UA 1389"],["07-07","SEA","SJC","DL","DL 3736"],["08-14","SFO","DFW","F9","F9 2376"],["08-17","DFW","SFO","AA","AA 1949"],["09-05","SJC","SEA","DL","DL"],["09-10","SEA","SJC","DL","DL"],["11-14","SFO","SEA","AS","AS 591"],["11-16","SEA","SFO","UA","UA 499"],["11-23","SJC","SEA","WN","WN 2150"],["12-01","SEA","SJC","DL","DL 3736"],["12-19","SJC","SEA","WN","WN 3914"]];
 const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-const today = new Date(); today.setHours(0,0,0,0);
+const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
 function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
 const fl = F.map(([md,from,to,air,no])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{from,to,air,no,date,up:date>=today,mi:miles(AP[from],AP[to])};});
 document.getElementById("miles").textContent = `${Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US")} MI`;

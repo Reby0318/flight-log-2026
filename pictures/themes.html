@@ -61,7 +61,7 @@ const AL = {
 const F = [["01-02","SEA","SJC","WN"],["06-12","SFO","SEA","UA"],["06-23","SEA","SJC","AS"],["06-30","SFO","SEA","UA"],["07-07","SEA","SJC","DL"],["08-14","SFO","DFW","F9"],["08-17","DFW","SFO","AA"],["09-05","SJC","SEA","DL"],["09-10","SEA","SJC","DL"],["11-14","SFO","SEA","AS"],["11-16","SEA","SFO","UA"],["11-23","SJC","SEA","WN"],["12-01","SEA","SJC","DL"],["12-19","SJC","SEA","WN"]];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 // "#t15-final" renders as of Dec 20, 2026 (the planned posting day), when every flight has been flown.
-const today = /-final$/.test(location.hash) ? new Date(2026, 11, 20) : (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
 function miles(a,b){const r=Math.PI/180,dLa=(b.lat-a.lat)*r,dLo=(b.lon-a.lon)*r,h=Math.sin(dLa/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLo/2)**2;return 2*3958.8*Math.asin(Math.sqrt(h));}
 const fl = F.map(([md,from,to,air])=>{const [m,d]=md.split("-").map(Number);const date=new Date(2026,m-1,d);return{m:m-1,d,from,to,air,date,up:date>=today,mi:miles(AP[from],AP[to]),key:[from,to].sort().join("-")};});
 const TOTAL = Math.round(fl.reduce((s,f)=>s+f.mi,0)).toLocaleString("en-US");
