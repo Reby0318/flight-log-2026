@@ -12,7 +12,7 @@ My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 - `pictures/themed/` — 20 Story pictures with a real US map, the three routes labeled with their airlines, an airline row and the flight list (`2026-flights-map-01.png` … `20`); regenerate with `pictures/themes.html#t1`…`#t20`
 - `pictures/more/` — 20 more Story pictures (`2026-flights-01.png` … `20`), overview in `00-overview.png`; regenerate with `pictures/variants.html#v1`…`#v20`
 - `flight-story-2026.png` — one-picture Instagram Story (1080×1920), made from `story-picture.html`
-- `index.html` — interactive route map and flight log, with a game layer: pilot level (miles = XP), 10 achievements, and collectible flight stamps (tap a flight to stamp it and fly it on the map)
+- `index.html` — interactive route map and flight log, with a game layer: pilot level (miles = XP), score, next quest, 10 achievements, airline trading cards with rarity, route mastery stars, collectible flight stamps (tap a flight to stamp it and fly it on the map) and a "Play the season" replay
 
 14 flights · 4 airports (SEA, SFO, SJC, DFW) · 6 airlines (Delta, United, Southwest, Alaska, Frontier, American)
 

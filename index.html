@@ -160,6 +160,36 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .confetti { position: fixed; top: -12px; width: 10px; height: 14px; z-index: 60; pointer-events: none; animation: fall 1.8s linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 @media (prefers-reduced-motion: reduce) { .xp i, .stampd, .toast { transition: none; } .confetti { display: none; } }
+
+/* collection: airline cards + route mastery, season replay */
+.collection { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 860px) { .collection { grid-template-columns: 1fr; } }
+.colhead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.colhead h2 { font: 600 24px var(--display); text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+.colhead span { font: 500 12px var(--mono); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.tcard { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; justify-items: start; transition: transform .2s; }
+.tcard:hover { transform: translateY(-3px) rotate(-1deg); }
+.tcard .rar { font: 600 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.tcard .rar.uncommon { color: var(--ink); border-color: var(--ink); }
+.tcard .rar.rare { color: #1d2b4a; background: #e8a33a; border-color: #e8a33a; }
+.tcard b { font: 800 30px/1 var(--display); }
+.tcard small { font-size: 12px; color: var(--muted); }
+.routes { display: grid; gap: 10px; }
+.rm { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+.rm b { font: 800 24px var(--display); letter-spacing: .02em; }
+.rm .st { font-size: 22px; letter-spacing: 2px; color: var(--line); }
+.rm .st em { font-style: normal; color: #e8a33a; }
+.rm small { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.playbar { display: flex; align-items: center; gap: 12px; padding: 0 6px 10px; }
+.playbtn { font: 700 14px var(--body); color: #fff; background: #1d2b4a; border: 0; border-radius: 99px; padding: 9px 16px; cursor: pointer; }
+.playbtn:disabled { opacity: .6; cursor: default; }
+.playbtn:focus-visible { outline: 2px solid #e8a33a; outline-offset: 2px; }
+.nowplaying { font: 500 13px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.pilot .quest { margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.08); font-size: 13px; line-height: 1.4; }
+.pilot .quest b { font: 700 11px var(--mono); letter-spacing: .14em; opacity: .7; display: block; }
+.pilot .score { display: flex; gap: 18px; font-size: 13px; opacity: .9; }
+.pilot .score strong { font: 800 22px var(--display); display: block; letter-spacing: .02em; }
 </style>
 
 <div class="wrap">
@@ -177,8 +207,14 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
     <div class="achs" id="achs"></div>
   </section>
 
+  <section class="collection" aria-label="Collection">
+    <div><div class="colhead"><h2>Airline cards</h2><span>6 of 6 collected</span></div><div class="cards" id="cards"></div></div>
+    <div><div class="colhead"><h2>Route mastery</h2><span>★ 1 · ★★ 3 · ★★★ 5 flights</span></div><div class="routes" id="routes"></div></div>
+  </section>
+
   <main>
     <section class="mapcard" aria-label="Route map">
+      <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><span class="nowplaying" id="now">Replays all 14 flights in order</span></div>
       <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of 2026 flight routes between Seattle, San Francisco, San Jose and Dallas–Fort Worth"></svg>
       <div class="legend">
         <span>Line color = airline</span>
@@ -396,7 +432,9 @@ function renderPilot() {
     <div class="xp"><i id="xpbar"></i></div>
     <div class="xpl"><span>${fmt(flownMi)} XP (miles flown)</span><span>${nxt ? `${fmt(nxt[1] - flownMi)} to ${nxt[0]}` : "max level"}</span></div>
     <div class="stamps"><b id="stampN">${collected.size}/${FLIGHTS.length}</b><span>stamps collected</span></div>
-    <div class="hint">Tap a flight below to stamp it and watch it fly.</div>`;
+    <div class="score"><div><strong id="score">0</strong>score</div><div><strong id="achN">0/10</strong>achievements</div></div>
+    ${nextUp ? `<div class="quest"><b>NEXT QUEST</b>${MONTHS[nextUp.date.getMonth()]} ${nextUp.date.getDate()} · ${nextUp.from} → ${nextUp.to} on ${nextUp.air} · in ${Math.round((nextUp.date - today) / 864e5)} days</div>` : `<div class="quest"><b>SEASON COMPLETE</b>Every 2026 flight is flown.</div>`}
+    <div class="hint">Tap a flight below to stamp it, or press Play the season on the map.</div>`;
   requestAnimationFrame(() => requestAnimationFrame(() => { const x = document.getElementById("xpbar"); if (x) x.style.width = Math.min(100, pct) + "%"; }));
 }
 
@@ -414,7 +452,7 @@ function renderAchs() {
     { ic: "✓", c: "#c8323c", t: "Season finale", d: "Fly all 14 flights of 2026", have: flownF.length, need: FLIGHTS.length },
     { ic: "✦", c: "#e0598b", t: "Stamp collector", d: "Collect every stamp below", have: collected.size, need: FLIGHTS.length },
   ];
-  const done = A.filter(a => a.have >= a.need).length;
+  const done = A.filter(a => a.have >= a.need).length; achDone = done;
   document.getElementById("achs").innerHTML = A.map(a => {
     const ok = a.have >= a.need, pct = Math.min(100, a.have / a.need * 100);
     return `<div class="ach${ok ? "" : " locked"}" title="${a.d}"><span class="ic">${a.ic}</span><b>${a.t}</b><span>${a.d}</span>${ok ? `<div class="ok">UNLOCKED</div>` : `<div class="bar"><i style="width:${pct}%"></i></div><span>${a.need > 1000 ? fmt(a.have) + " / " + fmt(a.need) : a.have + " / " + a.need}</span>`}</div>`;
@@ -430,31 +468,72 @@ function confetti() {
   const cols = ["#e8a33a","#1d2b4a","#c9d2e0"];
   for (let k = 0; k < 80; k++) { const c = document.createElement("i"); c.className = "confetti"; c.style.left = Math.random() * 100 + "vw"; c.style.background = cols[k % cols.length]; c.style.animationDelay = Math.random() * .6 + "s"; c.style.borderRadius = k % 3 ? "2px" : "50%"; document.body.appendChild(c); setTimeout(() => c.remove(), 2600); }
 }
-function fly(i) {
-  const arc = svg.querySelector(`.arc[data-i="${i}"]`); if (!arc || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+function fly(i, dur = 1600) {
+  return new Promise(done => {
+  const arc = svg.querySelector(`.arc[data-i="${i}"]`); if (!arc || matchMedia("(prefers-reduced-motion: reduce)").matches) { done(); return; }
   const len = arc.getTotalLength(), g = document.createElementNS("http://www.w3.org/2000/svg", "g");
   g.innerHTML = `<circle r="15" fill="var(--surface)" stroke="${arc.style.stroke}" stroke-width="3"/><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="${arc.style.stroke}"/>`;
   svg.appendChild(g); focus(i);
-  const t0 = performance.now(), dur = 1600;
+  const t0 = performance.now();
   (function step(now) {
     const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
     const p = arc.getPointAtLength(len * e), q = arc.getPointAtLength(Math.min(len, len * e + 1));
     g.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI})`);
-    if (t < 1) requestAnimationFrame(step); else setTimeout(() => { g.remove(); focus(null); }, 400);
+    if (t < 1) requestAnimationFrame(step); else setTimeout(() => { g.remove(); focus(null); done(); }, 250);
   })(t0);
+  });
 }
-function collect(i, card) {
-  fly(i);
+function collect(i, card, quiet) {
+  if (!quiet) fly(i);
   if (collected.has(i)) return;
-  collected.add(i); card.classList.add("got");
+  collected.add(i); if (card) card.classList.add("got");
   try { localStorage.setItem("flight-stamps", JSON.stringify([...collected])); } catch (e) {}
   const f = FLIGHTS[i];
   document.getElementById("stampN").textContent = `${collected.size}/${FLIGHTS.length}`;
-  renderAchs();
+  renderAchs(); renderScore();
   if (collected.size === FLIGHTS.length) { toast("Passport complete! All 14 stamps collected"); confetti(); }
-  else toast(`Stamp collected: ${f.from} → ${f.to} · ${collected.size}/${FLIGHTS.length}`);
+  else if (!quiet) toast(`Stamp collected: ${f.from} → ${f.to} · ${collected.size}/${FLIGHTS.length}`);
 }
-renderPilot(); renderAchs();
+
+/* ---------- score, airline cards, route mastery, season replay ---------- */
+let achDone = 0;
+const nextUp = FLIGHTS.find(f => f.up);
+function renderScore() {
+  const score = achDone * 100 + collected.size * 10 + Math.floor(flownMi / 10);
+  const el = document.getElementById("score"); if (el) el.textContent = fmt(score);
+  const a = document.getElementById("achN"); if (a) a.textContent = `${achDone}/10`;
+  const n = document.getElementById("stampN"); if (n) n.textContent = `${collected.size}/${FLIGHTS.length}`;
+}
+(function cards() {
+  const byAir = {}; FLIGHTS.forEach(f => { (byAir[f.air] = byAir[f.air] || []).push(f); });
+  document.getElementById("cards").innerHTML = Object.entries(byAir).sort((x, y) => y[1].length - x[1].length).map(([air, fs]) => {
+    const r = fs.length >= 3 ? "common" : fs.length === 2 ? "uncommon" : "rare";
+    return `<div class="tcard"><span class="rar ${r}">${r}</span>${LOGO_PILL(AL[air].c, 34, 118)}<b>×${fs.length}</b><small>${fmt(fs.reduce((s, f) => s + f.mi, 0))} mi · ${fs.filter(f => !f.up).length} flown</small></div>`;
+  }).join("");
+})();
+(function routes() {
+  const R = {}; FLIGHTS.forEach(f => { const k = [f.from, f.to].sort().join(" ⇄ "); (R[k] = R[k] || []).push(f); });
+  document.getElementById("routes").innerHTML = Object.entries(R).sort((x, y) => y[1].length - x[1].length).map(([k, fs]) => {
+    const flown = fs.filter(f => !f.up).length, stars = flown >= 5 ? 3 : flown >= 3 ? 2 : flown >= 1 ? 1 : 0;
+    const nextNeed = stars === 3 ? null : [1, 3, 5][stars];
+    return `<div class="rm"><b>${k}</b><span class="st" aria-label="${stars} of 3 stars"><em>${"★".repeat(stars)}</em>${"★".repeat(3 - stars)}</span><small>${flown} flown${fs.length > flown ? ` · ${fs.length - flown} booked` : ""}${nextNeed ? ` · ${nextNeed - flown} more for the next star` : " · mastered"}</small></div>`;
+  }).join("");
+})();
+document.getElementById("play").addEventListener("click", async e => {
+  const btn = e.currentTarget, now = document.getElementById("now");
+  btn.disabled = true;
+  const order = [...FLIGHTS].sort((a, b) => a.date - b.date);
+  for (const [k, f] of order.entries()) {
+    now.textContent = `Flight ${k + 1} of ${order.length} · ${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}`;
+    await fly(f.i, 1100);
+    collect(f.i, document.querySelector(`.pass[data-i="${f.i}"]`), true);
+  }
+  now.textContent = "Season replayed · every stamp collected";
+  btn.disabled = false; btn.textContent = "↺ Replay the season";
+  if (collected.size === FLIGHTS.length) confetti();
+});
+
+renderPilot(); renderAchs(); renderScore();
 
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
