@@ -122,7 +122,8 @@ const THEMES = [
   { ...MOVIE, name: "midnight premiere", wall: `${grain}, radial-gradient(ellipse at 50% 15%, #2e2a3d, #121019 80%)`, title: "#ece8f5", hl: "#8f86b3", hlInk: "#121019", hlFull: true, n1: "#ece8f5", n2: "#d7d2e6", tape1: "rgba(143,134,179,.6)", pp: "#e5e3ec", water: "#c9c6dc", land: "#f5f4f9", land2: "#e3e1ec",
     h1: "font-family:'Anton';font-weight:400;font-size:92px;text-transform:uppercase;letter-spacing:.03em", eye: "Midnight showing · Dec 20", cap: "Based on true flights" },
 ];
-const tm = /^#c(\d+)$/.exec(location.hash);
+const tm = /^#c(\d+)(?:-([a-z]+))?$/.exec(location.hash);
+const FX = new Set(((tm && tm[2]) || "").split(""));
 const TH = { ...BASE, ...THEMES[(tm ? Math.min(20, Math.max(1, +tm[1])) : 1) - 1] };
 if (TH.deco) document.getElementById("pg").insertAdjacentHTML("afterbegin", `<div style="position:absolute;inset:0;overflow:hidden">${TH.deco}</div>`);
 { const pg = document.getElementById("pg").style; Object.entries({ "--wall": TH.wall, "--title": TH.title, "--hl": TH.hl, "--hlInk": TH.hlInk || "#262a33", "--tape1": TH.tape1, "--tape2": TH.tape2, "--pp": TH.pp, "--rc": TH.rc }).forEach(([k, v]) => pg.setProperty(k, v)); }
@@ -231,6 +232,48 @@ document.getElementById("pg").insertAdjacentHTML("beforeend", `
   document.head.appendChild(css);
   document.querySelectorAll(".note").forEach(n => { if (/longest/i.test(n.textContent)) n.remove(); });
   document.querySelectorAll("#pg > svg").forEach(e => e.remove());
+}
+
+/* ---------- bold options: n = night map, t = season-pass ticket, g = giant 14, c = contrail ---------- */
+if (FX.has("n")) {
+  Object.assign(TH, { water: "#12213a", land: "#2b3b55", land2: "#202d44" });
+  const css = document.createElement("style");
+  css.textContent = `.mapcard { background: #1a2539 !important; }
+    .legend div { color: #fff; }
+    #map path[stroke="#c9c4b4"], #map path[stroke="#d8d2c0"] { stroke: rgba(255,255,255,.13); }
+    #map path[stroke="#fff"] { stroke: rgba(8,16,32,.9); }
+    #map path[stroke-width="4.5"] { filter: drop-shadow(0 0 3px rgba(255,255,255,.55)) drop-shadow(0 0 8px rgba(255,255,255,.25)); }
+    #map text { fill: #fff !important; stroke: rgba(8,16,32,.9) !important; }
+    #map tspan { fill: #fff; }
+    #map circle { fill: #12213a; stroke: #fff; }`;
+  document.head.appendChild(css);
+}
+if (FX.has("g")) {
+  document.getElementById("pg").insertAdjacentHTML("afterbegin", `<div style="position:absolute;right:-40px;top:900px;font:400 980px/0.8 Anton;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.16);letter-spacing:-.04em;pointer-events:none">14</div>`);
+}
+if (FX.has("c")) {
+  document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none" viewBox="0 0 1080 1920">
+    <path d="M1100 120 C 860 150, 700 260, 640 300 S 120 520, 30 980 S 520 1960, 1120 1880" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
+    <g transform="translate(1010 128) rotate(172) scale(2.2)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="#fff"/></g></svg>`);
+}
+if (FX.has("t")) {
+  const note = [...document.querySelectorAll(".note")].find(n => /season|total|production/i.test(n.textContent));
+  if (note) note.remove();
+  let h = 0, bars = ""; for (const ch of "seasonpass2026") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (let i = 0; i < 34; i++) { h = (h * 1103515245 + 12345) >>> 0; bars += `<i style="display:block;height:${1 + (h >>> 29)}px;margin-bottom:3px;background:#1d1d1f"></i>`; }
+  document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  <div style="position:absolute;top:150px;left:700px;width:350px;height:250px;transform:rotate(7deg);z-index:9;display:grid;grid-template-columns:1fr 70px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))">
+    <div style="background:#fbf8f1;border-radius:14px 0 0 14px;padding:18px 18px 16px;display:grid;align-content:space-between;font-family:'Inter Tight';color:#1d1d1f;border-right:3px dashed #cfc8b8">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 13px 'Inter Tight';letter-spacing:.22em">SEASON PASS</span><span style="font:700 13px 'Inter Tight';letter-spacing:.1em;color:#8a7f6a">2026</span></div>
+      <div style="font:400 64px/1 'Bebas Neue';letter-spacing:.02em">14 FLIGHTS</div>
+      <div style="display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;font-size:11px;letter-spacing:.12em;color:#8a7f6a">
+        <span>MILES<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f;letter-spacing:.02em">${nf(TOTAL)}</b></span>
+        <span>AIRLINES<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f">6</b></span>
+        <span>AIRPORTS<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f">4</b></span></div>
+      <div style="font-size:11px;letter-spacing:.14em;color:#8a7f6a">PASSENGER <b style="color:#1d1d1f">WU / TINGYUN</b></div>
+    </div>
+    <div style="background:#fbf8f1;border-radius:0 14px 14px 0;padding:16px 14px;display:grid;align-content:center">${bars}</div>
+  </div>`);
 }
 
 /* ---------- mirrored layout: receipt on the left, passport on the right ---------- */
