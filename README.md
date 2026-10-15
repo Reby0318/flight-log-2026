@@ -1,8 +1,11 @@
 # 2026 in the Air
+**Live status:** the web pages (`index.html`, `story.html`) mark each flight "flown" only after its landing time passes, and refresh themselves when the next flight lands. The Story pictures are dated Dec 20, 2026 (after the last flight).
+
+**Yearly logs:** 2026 is wrapped up (this page). From January, the [2027 flight log](2027/index.html) fills in automatically from new booking emails; see [automation/README.md](automation/README.md).
 
 **Make your own:** see the [Flight Log Kit](kit/README.md), a copy-paste prompt plus fill-in template (works from your email too).
 
-My 2026 flights (all 14 flown; everything is shown as of Dec 20, 2026), pulled from airline and Chase Travel confirmation emails.
+My 2026 flights, pulled from airline and Chase Travel confirmation emails.
 
 - **Dec 20 Story pick:** `pictures/final/2026-dec20-story.png` (Americana, light map + contrail; regenerate with `pictures/cinema.html#c7-ctu`)
 - `story.html` — tap-through story (like Instagram Stories): animated routes, airline badges, year-in-numbers finale. Tap right/left to move, hold to pause.

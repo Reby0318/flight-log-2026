@@ -202,7 +202,6 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .tcard { overflow: hidden; }
 .tcard.shine::after { content: ""; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.75) 50%, transparent 60%); animation: shine .8s ease-out; pointer-events: none; }
 @keyframes shine { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
-.ach.rev span:not(.ic) { color: var(--ink); }
 .pass.poof .stampd { transition: transform .3s, opacity .3s; transform: translateY(-50%) rotate(20deg) scale(1.6) !important; opacity: 0; }
 .pass.restamp .stampd { animation: restamp .45s cubic-bezier(.2,1.6,.4,1); }
 @keyframes restamp { 0% { transform: translateY(-50%) rotate(-12deg) scale(1.8); opacity: 0; } 100% { transform: translateY(-50%) rotate(-12deg) scale(1); opacity: .85; } }
@@ -220,6 +219,28 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .modal .box button { justify-self: center; font: 700 14px var(--body); background: #e8a33a; color: #1d2b4a; border: 0; border-radius: 99px; padding: 10px 20px; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .pop, .wiggle, .shake, .tcard.shine::after, .rain, .modal .box { animation: none !important; } }
 @media (max-width: 600px) { .board .cell.next { grid-column: 1 / -1; } }
+.fx-night { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: radial-gradient(ellipse at 50% 0%, rgba(20,30,70,.55), rgba(5,10,30,.72)); transition: opacity .8s; }
+.fx-night i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: tw 1.4s ease-in-out infinite alternate; }
+@keyframes tw { from { opacity: .2; } to { opacity: 1; } }
+.fx-dawn { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: linear-gradient(0deg, rgba(255,170,90,.45), rgba(255,220,160,.18) 45%, transparent 75%); transition: opacity .8s; }
+.fx-night.out, .fx-dawn.out { opacity: 0; }
+.ach span:not(.ic) { color: var(--muted); }
+.modal .box .ey { font: 500 12px var(--mono); letter-spacing: .16em; opacity: .7; }
+.modal .box .bp { background: #fbf8f1; color: #1d2b4a; border-radius: 14px; padding: 16px; display: grid; gap: 10px; text-align: left; }
+.modal .box .bp .r { display: flex; justify-content: space-between; align-items: center; font: 800 40px var(--display); }
+.modal .box .bp .r.sm { font: 500 13px var(--body); color: #6b7489; margin-top: -8px; }
+.modal .box .bp .gr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font: 600 15px var(--body); border-top: 2px dashed #d8d2c4; padding-top: 10px; }
+.modal .box .bp small { display: block; font: 500 10px var(--mono); letter-spacing: .14em; color: #8a8f9c; }
+.modal .box .nt { font-size: 13px; opacity: .85; }
+.modal .box .qz { display: grid; gap: 8px; }
+.modal .box .qz button { background: rgba(255,255,255,.1); color: #fff; border-radius: 10px; padding: 12px; font-weight: 700; }
+.modal .box .qz button.right { background: #2f9e5b; color: #fff; }
+.modal .box .qz button.wrong { background: #b3323b; color: #fff; }
+.modal .box.light { background: #fbf8f1; color: #1d2b4a; }
+.modal .box .pc { border: 3px solid var(--pc); border-radius: 12px; padding: 18px; display: grid; gap: 6px; background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(0,0,0,.02) 10px 20px); }
+.modal .box .pcl { font: 700 22px Caveat, cursive; color: var(--pc); }
+.modal .box .pcc { font: 800 54px/1 var(--display); color: var(--pc); letter-spacing: .02em; }
+.modal .box .pcs { justify-self: end; font: 700 14px var(--mono); border: 2px dashed var(--pc); color: var(--pc); padding: 4px 8px; transform: rotate(-6deg); }
 </style>
 
 <div class="wrap">
@@ -304,9 +325,30 @@ const AL = {
 const badge = name => LOGO_PILL(AL[name].c, 26, 92, "margin-right:6px");
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-const today = new Date(2026, 11, 20); // as of posting day: every 2026 flight flown
+// Live status: a flight counts as "flown" only after it has landed (arrival airport's local time).
+// For testing, "?asof=2026-11-20T09:00" in the address pretends it's that moment.
+const NOW = (() => { const q = /[?&]asof=(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(location.search); return q ? new Date(q[1]) : new Date(); })();
+const today = new Date(NOW); today.setHours(0, 0, 0, 0);
+const AIRPORT_TZ = { SEA: 8, SFO: 8, SJC: 8, DFW: 6 }; // standard-time hours behind UTC
+function landedAt(f) {
+  const [y, m, d] = f.d.split("-").map(Number);
+  const mins = s => { const r = /(\d+):(\d+)\s*(AM|PM)/.exec(s || ""); if (!r) return null; let h = +r[1] % 12; if (r[3] === "PM") h += 12; return h * 60 + +r[2]; };
+  const [depS, arrS] = (f.t || "").split("→");
+  const dep = mins(depS); let arr = mins(arrS), plus = 0;
+  if (arr === null) arr = dep !== null ? dep + 240 : 23 * 60 + 59; // no landing time: departure + 4h, or end of day
+  else if (dep !== null && arr < dep) plus = 1;                   // lands after midnight
+  const day = Date.UTC(y, m - 1, d + plus), dst = day >= Date.UTC(y, 2, 8) && day < Date.UTC(y, 10, 1); // 2026 DST: Mar 8 – Nov 1
+  return new Date(Date.UTC(y, m - 1, d + plus, 0, arr + (AIRPORT_TZ[f.to] - (dst ? 1 : 0)) * 60));
+}
+function scheduleLiveRefresh() {
+  const next = FLIGHTS.map(landedAt).filter(t => t > NOW).sort((a, b) => a - b)[0];
+  if (!next || /asof=/.test(location.search)) return;
+  setTimeout(() => location.reload(), Math.min(next - NOW + 60000, 6 * 3600e3));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && new Date() > next) location.reload(); });
+}
 const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = f.date >= today; f.mi = miles(AIRPORTS[f.from], AIRPORTS[f.to]); });
+FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = landedAt(f) > NOW; f.mi = miles(AIRPORTS[f.from], AIRPORTS[f.to]); });
+scheduleLiveRefresh();
 
 function miles(a, b) {
   const r = Math.PI / 180, R = 3958.8;
@@ -600,12 +642,56 @@ document.getElementById("months").addEventListener("click", e => {
   if (!list.length) { toast(`No flights in ${MONTHS[+mo.dataset.m]}. A quiet month on the ground.`); return; }
   toast(`${MONTHS[+mo.dataset.m]}: ${list.length} flight${list.length > 1 ? "s" : ""}`); flySeq(list);
 });
-// achievements: flip to the detail; unlocked ones celebrate, locked ones wiggle
-document.getElementById("achs").addEventListener("click", e => {
+// achievements: each badge plays something that matches what it's for
+const fl2 = f => `${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to}`;
+const toMap = () => document.querySelector(".mapcard").scrollIntoView({ behavior: "smooth", block: "center" });
+function overlay(kind) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const o = document.createElement("div");
+  o.className = "fx-" + kind;
+  o.innerHTML = kind === "night" ? Array.from({ length: 60 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${Math.random() * 1.5}s"></i>`).join("") : "";
+  document.body.appendChild(o); setTimeout(() => o.classList.add("out"), 2600); setTimeout(() => o.remove(), 3400);
+}
+function burstAtMap(i, label) {
+  const arc = svg.querySelector(`.arc[data-i="${i}"]`); if (!arc) return;
+  const p = arc.getPointAtLength(arc.getTotalLength()), NS = "http://www.w3.org/2000/svg";
+  const g = document.createElementNS(NS, "g"); g.setAttribute("class", "mapburst"); g.setAttribute("transform", `translate(${p.x},${p.y})`);
+  g.innerHTML = `<circle r="10" fill="none" stroke="#e8a33a" stroke-width="4"/><path d="M0 -26 L7 -8 L26 -8 L11 4 L17 23 L0 12 L-17 23 L-11 4 L-26 -8 L-7 -8 Z" fill="#e8a33a" stroke="#1d2b4a" stroke-width="2"/>${label ? `<text y="46" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="22" fill="var(--ink)" paint-order="stroke" stroke="var(--surface)" stroke-width="5">${label}</text>` : ""}`;
+  svg.appendChild(g); setTimeout(() => g.remove(), 2600);
+}
+const flownSorted = () => FLIGHTS.filter(f => !f.up).sort((a, b) => a.date - b.date);
+const BADGE = {
+  "First takeoff": async (a, say) => { const f = flownSorted()[0]; toMap(); say(`Where it all began: ${fl2(f)} on ${f.air}`); await sleep(400); await fly(f.i, 1800); burstAtMap(f.i, "Flight 1"); },
+  "Frequent flyer": async (a, say) => { const list = flownSorted().slice(0, 10); toMap(); await sleep(400);
+    for (const [k, f] of list.entries()) { say(`Flight ${k + 1} of 10 · ${fl2(f)}`); await fly(f.i, 520); }
+    burstAtMap(list[list.length - 1].i, "10th flight"); },
+  "Commuter": async (a, say) => { const list = FLIGHTS.filter(f => !f.up && [f.from, f.to].sort().join() === "SEA,SJC"); toMap(); await sleep(400);
+    for (const [k, f] of list.entries()) { say(`SEA ⇄ SJC · trip ${k + 1} of ${list.length} · ${fl2(f)}`); await fly(f.i, 700); }
+    say(`Route mastered: SEA ⇄ SJC, ${list.length} times`); },
+  "Red-eye survivor": async (a, say) => { const list = FLIGHTS.filter(f => !f.up && depHour(f) !== null && (depHour(f) >= 22 || depHour(f) < 4)); overlay("night"); toMap(); await sleep(400);
+    for (const f of list) { say(`Red-eye · ${fl2(f)} · departs ${f.t.split(" → ")[0]}`); await fly(f.i, 1100); } },
+  "Early bird": async (a, say) => { const f = FLIGHTS.find(f => !f.up && depHour(f) !== null && depHour(f) >= 4 && depHour(f) < 7); if (!f) return; overlay("dawn"); toMap(); await sleep(400);
+    say(`Up before sunrise: ${fl2(f)} · wheels up ${f.t.split(" → ")[0]}`); await fly(f.i, 1600); },
+  "Airline collector": async (a, say) => { const cards = [...document.querySelectorAll(".tcard")]; cards[0].scrollIntoView({ behavior: "smooth", block: "center" }); await sleep(500);
+    for (const [k, c] of cards.entries()) { c.classList.remove("shine"); void c.offsetWidth; c.classList.add("shine"); pop(c); say(`Airline ${k + 1} of ${cards.length} collected`); await sleep(420); }
+    confettiAt(cards[cards.length - 1]); say("All 6 airlines collected"); },
+  "Lone Star": async (a, say) => { const f = FLIGHTS.find(f => f.to === "DFW"); toMap(); await sleep(400); say(`Howdy, Texas! ${fl2(f)} on ${f.air}`); await fly(f.i, 1800); burstAtMap(f.i, "Texas"); },
+  "Halfway around": async (a, say) => { const left = 12450 - Math.round(flownMi); const bar = a.querySelector(".bar i"); if (bar) { const w = bar.style.width; bar.style.transition = "none"; bar.style.width = "0"; void bar.offsetWidth; bar.style.transition = "width 1.2s cubic-bezier(.2,.8,.2,1)"; bar.style.width = w; }
+    say(left > 0 ? `${fmt(left)} more miles to fly halfway around the Earth` : "Halfway around the Earth!"); },
+  "Season finale": async (a, say) => { toMap(); await sleep(400); document.getElementById("play").click(); },
+  "Stamp collector": async (a, say) => { const left = [...document.querySelectorAll(".pass:not(.got)")];
+    if (!left.length) { say("Passport complete! Every stamp collected"); confetti(); return; }
+    left[0].scrollIntoView({ behavior: "smooth", block: "center" }); await sleep(450);
+    left.forEach((c, k) => setTimeout(() => wiggle(c), k * 70)); say(`${left.length} stamp${left.length > 1 ? "s" : ""} left · tap a flight to stamp it`); },
+};
+let badgeRun = 0;
+document.getElementById("achs").addEventListener("click", async e => {
   const a = e.target.closest(".ach"); if (!a) return;
-  if (a.classList.contains("locked")) { wiggle(a); toast(`Locked · ${a.title}. Keep flying!`); return; }
-  pop(a); a.classList.toggle("rev"); confettiAt(a);
-  toast(`${a.querySelector("b").textContent} · unlocked!`);
+  const name = a.querySelector("b").textContent, locked = a.classList.contains("locked");
+  pop(a); if (!locked) confettiAt(a);
+  const run = BADGE[name];
+  if (!run) { toast(`${name} · ${locked ? "keep flying!" : "unlocked!"}`); return; }
+  const id = ++badgeRun; run(a, m => { if (id === badgeRun) toast(m); });
 });
 // airline cards: shine + a stat
 document.getElementById("cards").addEventListener("click", e => {
@@ -641,17 +727,69 @@ function planeRain() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   for (let k = 0; k < 28; k++) { const p = document.createElement("span"); p.className = "rain"; p.textContent = "✈"; p.style.left = Math.random() * 100 + "vw"; p.style.animationDelay = Math.random() * .8 + "s"; p.style.fontSize = 18 + Math.random() * 22 + "px"; document.body.appendChild(p); setTimeout(() => p.remove(), 3200); }
 }
-// surprise button: something different every time
+// surprise button: a deck of real moments, shuffled so nothing repeats until you've seen them all
+function card(html, cls = "") {
+  document.querySelectorAll(".modal").forEach(m => m.remove());
+  const m = document.createElement("div"); m.className = "modal"; m.setAttribute("role", "dialog");
+  m.innerHTML = `<div class="box ${cls}">${html}<button type="button" class="close">Close</button></div>`;
+  m.addEventListener("click", ev => { if (ev.target === m || ev.target.classList.contains("close")) m.remove(); });
+  document.body.appendChild(m); m.querySelector(".close").focus(); return m;
+}
+const flownList = () => FLIGHTS.filter(f => !f.up).sort((a, b) => a.date - b.date);
+const airMinutes = f => { const [a, b] = (f.t || "").split("→"); if (!b) return null; const dep = landedAt({ ...f, t: a + "→" + a }), arr = landedAt(f);
+  const tz = c => AIRPORT_TZ[c]; return Math.round((arr - dep) / 60000) + (tz(f.from) - tz(f.to)) * 60; };
+async function spinTo(label) { const now = document.getElementById("now"), pool = FLIGHTS.map(f => `${f.from} → ${f.to}`);
+  for (let k = 0; k < 14; k++) { now.textContent = "✦ " + pool[(Math.random() * pool.length) | 0]; await sleep(55 + k * 9); } now.textContent = "✦ " + label; }
 const SURPRISES = [
-  () => { const f = pick(FLIGHTS); toast(`Mystery flight: ${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} on ${f.air}`); fly(f.i); },
-  () => toast(pick(FACTS)),
-  () => { confetti(); toast("Confetti! Just because."); },
-  () => { const m = document.querySelector(".mapcard"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); toast("Turbulence! Please return to your seat."); },
-  () => { planeRain(); toast("It's raining planes."); },
-  () => { const longest = FLIGHTS.reduce((a, b) => b.mi > a.mi ? b : a); toast(`The long one: ${longest.from} → ${longest.to}, ${fmt(longest.mi)} mi`); fly(longest.i, 2200); },
+  // 1. mystery boarding pass
+  async () => { const f = pick(flownList().length ? flownList() : FLIGHTS); await spinTo(`${f.from} → ${f.to}`); fly(f.i, 1600);
+    card(`<div class="ey">MYSTERY BOARDING PASS</div><div class="bp"><div class="r"><b>${f.from}</b><span>✈</span><b>${f.to}</b></div>
+      <div class="r sm"><span>${AIRPORTS[f.from].city}</span><span>${AIRPORTS[f.to].city}</span></div>
+      <div class="lg">${badge(f.air)}</div>
+      <div class="gr"><div><small>DATE</small>${MONTHS[f.date.getMonth()]} ${f.date.getDate()}</div><div><small>FLIGHT</small>${f.no || f.air}</div><div><small>DEPARTS</small>${f.t ? f.t.split(" → ")[0] : "—"}</div><div><small>MILES</small>${fmt(f.mi)}</div></div>
+      ${f.note ? `<div class="nt">${f.note}</div>` : ""}</div>`); },
+  // 2. trivia
+  async () => { const counts = {}; FLIGHTS.forEach(f => counts[f.air] = (counts[f.air] || 0) + 1);
+    const routeN = FLIGHTS.filter(f => [f.from, f.to].sort().join() === "SEA,SJC").length;
+    const Q = pick([
+      { q: "Which airline flew you the most this year?", a: Object.entries(counts).sort((x, y) => y[1] - x[1])[0][0], o: ["Delta", "United", "Southwest"] },
+      { q: "How many times did you fly between Seattle and San José?", a: String(routeN), o: ["6", String(routeN), "10"] },
+      { q: "What was your longest flight?", a: "SFO → DFW", o: ["SEA → SFO", "SFO → DFW", "SJC → SEA"] },
+      { q: "What time did your earliest takeoff leave?", a: "12:54 AM", o: ["6:00 AM", "12:54 AM", "7:00 AM"] },
+      { q: "How many different airlines did you fly?", a: "6", o: ["4", "5", "6"] },
+    ]);
+    const m = card(`<div class="ey">POP QUIZ</div><h3 style="font-size:28px;text-transform:none">${Q.q}</h3><div class="qz">${Q.o.map(o => `<button type="button" data-o="${o}">${o}</button>`).join("")}</div><div class="nt" id="qres"></div>`);
+    m.querySelectorAll(".qz button").forEach(b => b.addEventListener("click", () => {
+      const ok = b.dataset.o === Q.a; m.querySelectorAll(".qz button").forEach(x => { x.disabled = true; x.classList.toggle("right", x.dataset.o === Q.a); }); if (!ok) b.classList.add("wrong");
+      m.querySelector("#qres").textContent = ok ? "Correct! You know your skies." : `Not quite. It's ${Q.a}.`; if (ok) confettiAt(b); })); },
+  // 3. time-lapse of the season so far
+  async () => { const list = flownList(); toMap(); await sleep(350); for (const [k, f] of list.entries()) { document.getElementById("now").textContent = `Time-lapse · ${k + 1}/${list.length} · ${MONTHS[f.date.getMonth()]} ${f.date.getDate()}`; await fly(f.i, 380); }
+    document.getElementById("now").textContent = `${list.length} flights in ${((list.length * 380) / 1000).toFixed(1)} seconds`; },
+  // 4. stat card
+  async () => { const list = flownList(), mins = list.map(airMinutes).filter(x => x), total = mins.reduce((a, b) => a + b, 0);
+    let gap = 0, gapA, gapB; for (let k = 1; k < list.length; k++) { const g = (list[k].date - list[k - 1].date) / 864e5; if (g > gap) { gap = g; gapA = list[k - 1]; gapB = list[k]; } }
+    const hub = {}; list.forEach(f => { hub[f.from] = (hub[f.from] || 0) + 1; hub[f.to] = (hub[f.to] || 0) + 1; }); const top = Object.entries(hub).sort((a, b) => b[1] - a[1])[0];
+    card(`<div class="ey">BY THE NUMBERS</div><h3>Your sky stats</h3><div class="g">
+      <div><b>${Math.floor(total / 60)}h ${total % 60}m</b>in the air${mins.length < list.length ? "*" : ""}</div>
+      <div><b>${fmt(list.reduce((s, f) => s + f.mi, 0) / Math.max(1, list.length))}</b>avg miles per flight</div>
+      <div><b>${gap | 0} days</b>longest break (${MONTHS[gapA.date.getMonth()]} ${gapA.date.getDate()} → ${MONTHS[gapB.date.getMonth()]} ${gapB.date.getDate()})</div>
+      <div><b>${top[0]}</b>home base · ${top[1]} times</div></div>${mins.length < list.length ? `<div class="nt">*flights with known times only</div>` : ""}`); },
+  // 5. postcard from a random stop
+  async () => { const stops = { SEA: ["Seattle", "Greetings from the Emerald City", "#2e6b5a"], SFO: ["San Francisco", "Greetings from the Golden Gate", "#b5462f"], SJC: ["San José", "Greetings from Silicon Valley", "#c08a2e"], DFW: ["Dallas", "Howdy from the Lone Star State", "#7a2731"] };
+    const code = pick(Object.keys(stops)), [city, line, col] = stops[code], n = FLIGHTS.filter(f => f.to === code && !f.up).length;
+    card(`<div class="pc" style="--pc:${col}"><div class="pcl">${line}</div><div class="pcc">${city.toUpperCase()}</div><div class="pcs">${code}</div><div class="nt">You landed here ${n} time${n === 1 ? "" : "s"} this year.</div></div>`, "light"); },
+  // 6. turbulence
+  async () => { const m = document.querySelector(".mapcard"); toMap(); await sleep(300); for (let k = 0; k < 3; k++) { m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); await sleep(520); } toast("Turbulence! Seatbelt sign is on. Please return to your seat."); },
+  // 7. raining planes
+  async () => { planeRain(); toast("It's raining planes ✈"); },
+  // 8. the one that started it all / the latest
+  async () => { const list = flownList(), f = Math.random() < .5 ? list[0] : list[list.length - 1]; toMap(); await sleep(300); await spinTo(f === list[0] ? "Where it all began" : "Your latest landing");
+    await fly(f.i, 1800); toast(`${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} on ${f.air}`); },
 ];
-let lastS = -1;
-document.getElementById("surprise").addEventListener("click", e => { pop(e.currentTarget); let k; do { k = Math.floor(Math.random() * SURPRISES.length); } while (k === lastS); lastS = k; SURPRISES[k](); });
+let deck = [];
+document.getElementById("surprise").addEventListener("click", e => { pop(e.currentTarget);
+  if (!deck.length) deck = SURPRISES.map((_, k) => k).sort(() => Math.random() - .5);
+  SURPRISES[deck.pop()](); });
 // easter egg: tap the title 5 times
 let titleTaps = 0, titleT;
 document.querySelector("h1").addEventListener("click", e => { pop(e.currentTarget); titleTaps++; clearTimeout(titleT); titleT = setTimeout(() => titleTaps = 0, 1500); if (titleTaps >= 5) { titleTaps = 0; planeRain(); toast("You found the secret hangar ✈"); } });
