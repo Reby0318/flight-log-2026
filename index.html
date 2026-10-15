@@ -190,6 +190,35 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .pilot .quest b { font: 700 11px var(--mono); letter-spacing: .14em; opacity: .7; display: block; }
 .pilot .score { display: flex; gap: 18px; font-size: 13px; opacity: .9; }
 .pilot .score strong { font: 800 22px var(--display); display: block; letter-spacing: .02em; }
+
+/* playful interactions */
+.cell, .month, .ach, .tcard, .rm, .pilot .lvl, h1 { cursor: pointer; user-select: none; }
+.pop { animation: pop .38s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(.93); } 70% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.wiggle { animation: wig .45s; }
+@keyframes wig { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+.shake { animation: shake .5s; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+.tcard { overflow: hidden; }
+.tcard.shine::after { content: ""; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.75) 50%, transparent 60%); animation: shine .8s ease-out; pointer-events: none; }
+@keyframes shine { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+.ach.rev span:not(.ic) { color: var(--ink); }
+.pass.poof .stampd { transition: transform .3s, opacity .3s; transform: translateY(-50%) rotate(20deg) scale(1.6) !important; opacity: 0; }
+.pass.restamp .stampd { animation: restamp .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes restamp { 0% { transform: translateY(-50%) rotate(-12deg) scale(1.8); opacity: 0; } 100% { transform: translateY(-50%) rotate(-12deg) scale(1); opacity: .85; } }
+.surprise { font: 700 14px var(--body); color: #1d2b4a; background: #e8a33a; border: 0; border-radius: 99px; padding: 9px 16px; cursor: pointer; }
+.surprise:focus-visible { outline: 2px solid #1d2b4a; outline-offset: 2px; }
+.playbtn:active, .surprise:active, .seg button:active { transform: scale(.94); }
+.rain { position: fixed; top: -40px; font-size: 28px; color: #1d2b4a; z-index: 60; pointer-events: none; animation: rain 2.2s linear forwards; }
+@keyframes rain { to { transform: translateY(110vh) rotate(25deg); } }
+.modal { position: fixed; inset: 0; background: rgba(10,15,30,.55); display: grid; place-items: center; z-index: 70; padding: 16px; }
+.modal .box { width: min(420px, 100%); background: #1d2b4a; color: #fff; border-radius: 18px; padding: 26px 24px; text-align: center; display: grid; gap: 10px; animation: pop .45s cubic-bezier(.2,1.6,.4,1); }
+.modal .box h3 { font: 800 40px/1 var(--display); text-transform: uppercase; margin: 0; letter-spacing: .02em; }
+.modal .box .g { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0; }
+.modal .box .g div { background: rgba(255,255,255,.08); border-radius: 10px; padding: 10px; }
+.modal .box .g b { display: block; font: 800 30px var(--display); color: #e8a33a; }
+.modal .box button { justify-self: center; font: 700 14px var(--body); background: #e8a33a; color: #1d2b4a; border: 0; border-radius: 99px; padding: 10px 20px; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .pop, .wiggle, .shake, .tcard.shine::after, .rain, .modal .box { animation: none !important; } }
 </style>
 
 <div class="wrap">
@@ -214,7 +243,7 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 
   <main>
     <section class="mapcard" aria-label="Route map">
-      <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><span class="nowplaying" id="now">Replays all 14 flights in order</span></div>
+      <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><button class="surprise" id="surprise" type="button">✦ Surprise me</button><span class="nowplaying" id="now">Replays all 14 flights in order</span></div>
       <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of 2026 flight routes between Seattle, San Francisco, San Jose and Dallas–Fort Worth"></svg>
       <div class="legend">
         <span>Line color = airline</span>
@@ -313,7 +342,7 @@ const fmt = n => Math.round(n).toLocaleString("en-US");
   const nowM = today.getFullYear() === 2026 ? today.getMonth() : -1;
   el.innerHTML = MONTHS.map((m, i) => {
     const dots = FLIGHTS.filter(f => f.date.getMonth() === i).map(f => `<span class="dot${f.up ? " up" : ""}" title="${m} ${f.date.getDate()}: ${f.from} → ${f.to}"></span>`).join("");
-    return `<div class="month${i === nowM ? " now" : ""}"><span class="m">${m.toUpperCase()}</span><span class="dots">${dots}</span></div>`;
+    return `<div class="month${i === nowM ? " now" : ""}" data-m="${i}" title="Tap to fly ${m}"><span class="m">${m.toUpperCase()}</span><span class="dots">${dots}</span></div>`;
   }).join("");
 })();
 
@@ -485,7 +514,7 @@ function fly(i, dur = 1600) {
 }
 function collect(i, card, quiet) {
   if (!quiet) fly(i);
-  if (collected.has(i)) return;
+  if (collected.has(i)) { if (card) { card.classList.remove("restamp"); void card.offsetWidth; card.classList.add("restamp"); } if (!quiet) toast(pick(FACTS)); return; }
   collected.add(i); if (card) card.classList.add("got");
   try { localStorage.setItem("flight-stamps", JSON.stringify([...collected])); } catch (e) {}
   const f = FLIGHTS[i];
@@ -534,6 +563,119 @@ document.getElementById("play").addEventListener("click", async e => {
 });
 
 renderPilot(); renderAchs(); renderScore();
+
+/* ---------- playful interactions & surprises ---------- */
+const FACTS = [
+  "Delta flew you the most this year: 4 flights.",
+  "SEA ⇄ SJC is your most-flown route: 8 flights.",
+  "Longest flight: SFO → DFW, 1,461 miles.",
+  "Two red-eyes, both leaving SFO at 10:59 PM.",
+  `${fmt(FLIGHTS.reduce((s, f) => s + f.mi, 0))} miles is about 45% of the way around the Earth.`,
+  "You pass through Seattle on 12 of 14 flights.",
+  "June and November tie for busiest month: 3 flights each.",
+  "Earliest takeoff: 6:00 AM on Nov 23.",
+  "Six airlines in one year. That's a full collection.",
+  "Your last flight of 2026 lands at 12:05 AM on Dec 20.",
+];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const pop = el => { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); };
+const wiggle = el => { el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle"); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function flySeq(list, dur = 1000) { for (const f of list) await fly(f.i, dur); }
+
+// filters: bounce + fun fact
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
+// stat tiles: count up again
+document.getElementById("board").addEventListener("click", e => {
+  const cell = e.target.closest(".cell"); if (!cell) return; pop(cell);
+  const v = cell.querySelector(".v"); const m = /^([\d,]+)(.*)$/.exec(v.textContent.trim()); if (!m) return;
+  const target = +m[1].replace(/,/g, ""), rest = m[2], t0 = performance.now();
+  (function step(now) { const t = Math.min(1, (now - t0) / 900), e2 = 1 - Math.pow(1 - t, 3); v.textContent = fmt(target * e2) + rest; if (t < 1) requestAnimationFrame(step); })(t0);
+});
+// month dots: fly that month
+document.getElementById("months").addEventListener("click", e => {
+  const mo = e.target.closest(".month"); if (!mo) return; pop(mo);
+  const list = FLIGHTS.filter(f => f.date.getMonth() === +mo.dataset.m);
+  if (!list.length) { toast(`No flights in ${MONTHS[+mo.dataset.m]}. A quiet month on the ground.`); return; }
+  toast(`${MONTHS[+mo.dataset.m]}: ${list.length} flight${list.length > 1 ? "s" : ""}`); flySeq(list);
+});
+// achievements: flip to the detail; unlocked ones celebrate, locked ones wiggle
+document.getElementById("achs").addEventListener("click", e => {
+  const a = e.target.closest(".ach"); if (!a) return;
+  if (a.classList.contains("locked")) { wiggle(a); toast(`Locked · ${a.title}. Keep flying!`); return; }
+  pop(a); a.classList.toggle("rev"); confettiAt(a);
+  toast(`${a.querySelector("b").textContent} · unlocked!`);
+});
+// airline cards: shine + a stat
+document.getElementById("cards").addEventListener("click", e => {
+  const c = e.target.closest(".tcard"); if (!c) return;
+  c.classList.remove("shine"); void c.offsetWidth; c.classList.add("shine"); pop(c);
+  const rar = c.querySelector(".rar").textContent; toast(`${rar[0].toUpperCase() + rar.slice(1)} card · ${c.querySelector("small").textContent}`);
+});
+// route mastery: replay the route
+document.getElementById("routes").addEventListener("click", e => {
+  const r = e.target.closest(".rm"); if (!r) return; pop(r);
+  const [a, b] = r.querySelector("b").textContent.split(" ⇄ ");
+  const list = FLIGHTS.filter(f => [f.from, f.to].sort().join(" ⇄ ") === [a, b].sort().join(" ⇄ "));
+  toast(`Replaying ${a} ⇄ ${b} · ${list.length} flights`); flySeq(list, 800);
+});
+// pilot level: a rank-up preview
+document.getElementById("pilot").addEventListener("click", e => {
+  const l = e.target.closest(".lvl"); if (!l) return; pop(l);
+  let li = 0; LEVELS.forEach((x, k) => { if (flownMi >= x[1]) li = k; });
+  const nxt = LEVELS[li + 1]; toast(nxt ? `Next rank: ${nxt[0]} · ${fmt(nxt[1] - flownMi)} miles to go` : "Top rank reached!");
+});
+// confetti from an element
+function confettiAt(el) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = el.getBoundingClientRect(), cols = ["#e8a33a", "#1d2b4a", "#c9d2e0"];
+  for (let k = 0; k < 24; k++) {
+    const c = document.createElement("i"); c.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;width:8px;height:10px;background:${cols[k % 3]};z-index:60;pointer-events:none;border-radius:2px;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .9s`;
+    document.body.appendChild(c);
+    requestAnimationFrame(() => { const ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; c.style.transform = `translate(${Math.cos(ang) * d}px,${Math.sin(ang) * d}px) rotate(${Math.random() * 540}deg)`; c.style.opacity = "0"; });
+    setTimeout(() => c.remove(), 1000);
+  }
+}
+function planeRain() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  for (let k = 0; k < 28; k++) { const p = document.createElement("span"); p.className = "rain"; p.textContent = "✈"; p.style.left = Math.random() * 100 + "vw"; p.style.animationDelay = Math.random() * .8 + "s"; p.style.fontSize = 18 + Math.random() * 22 + "px"; document.body.appendChild(p); setTimeout(() => p.remove(), 3200); }
+}
+// surprise button: something different every time
+const SURPRISES = [
+  () => { const f = pick(FLIGHTS); toast(`Mystery flight: ${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} on ${f.air}`); fly(f.i); },
+  () => toast(pick(FACTS)),
+  () => { confetti(); toast("Confetti! Just because."); },
+  () => { const m = document.querySelector(".mapcard"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); toast("Turbulence! Please return to your seat."); },
+  () => { planeRain(); toast("It's raining planes."); },
+  () => { const longest = FLIGHTS.reduce((a, b) => b.mi > a.mi ? b : a); toast(`The long one: ${longest.from} → ${longest.to}, ${fmt(longest.mi)} mi`); fly(longest.i, 2200); },
+];
+let lastS = -1;
+document.getElementById("surprise").addEventListener("click", e => { pop(e.currentTarget); let k; do { k = Math.floor(Math.random() * SURPRISES.length); } while (k === lastS); lastS = k; SURPRISES[k](); });
+// easter egg: tap the title 5 times
+let titleTaps = 0, titleT;
+document.querySelector("h1").addEventListener("click", e => { pop(e.currentTarget); titleTaps++; clearTimeout(titleT); titleT = setTimeout(() => titleTaps = 0, 1500); if (titleTaps >= 5) { titleTaps = 0; planeRain(); toast("You found the secret hangar ✈"); } });
+// season recap after Play the season
+function recap() {
+  const m = document.createElement("div"); m.className = "modal"; m.setAttribute("role", "dialog");
+  m.innerHTML = `<div class="box"><div style="font:500 12px var(--mono);letter-spacing:.16em;opacity:.7">SEASON 2026 RECAP</div><h3>That's a wrap</h3>
+    <div class="g"><div><b>${FLIGHTS.length}</b>flights</div><div><b>${fmt(FLIGHTS.reduce((s, f) => s + f.mi, 0))}</b>miles</div><div><b>6</b>airlines</div><div><b>${collected.size}/14</b>stamps</div></div>
+    <div style="font-size:14px;opacity:.85">${pick(FACTS)}</div><button type="button">Close</button></div>`;
+  m.addEventListener("click", ev => { if (ev.target === m || ev.target.tagName === "BUTTON") m.remove(); });
+  document.body.appendChild(m); m.querySelector("button").focus();
+}
+document.getElementById("play").addEventListener("click", () => { const btn = document.getElementById("play"); const wait = setInterval(() => { if (!btn.disabled) { clearInterval(wait); recap(); } }, 300); });
+// tap a blank spot: clear the stamps so they can be collected again
+document.addEventListener("click", e => {
+  if (e.target.closest("button, a, input, .pass, .cell, .month, .ach, .tcard, .rm, .pilot, .mapcard, h1, .toast, .modal, .seg")) return;
+  if (!collected.size) return;
+  document.querySelectorAll(".pass.got").forEach(p => p.classList.add("poof"));
+  setTimeout(() => { document.querySelectorAll(".pass").forEach(p => p.classList.remove("got", "poof", "restamp")); }, 320);
+  collected.clear();
+  try { localStorage.setItem("flight-stamps", "[]"); } catch (err) {}
+  renderAchs(); renderScore();
+  toast("Stamps cleared · tap flights to collect them again");
+});
+
 
 document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
