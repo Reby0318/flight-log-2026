@@ -84,6 +84,11 @@ main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); g
 .mapcol { display: grid; gap: 24px; min-width: 0; align-self: stretch; align-content: start; }
 /* the story fills the space under the map and stays in view while the flight list scrolls */
 .storycard { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+/* the Dec 20 picture, same size as the animated story */
+.storypic { margin: 0; display: grid; gap: 8px; justify-items: center; }
+.storypic img { display: block; width: min(100%, 420px, (100vh - 120px) * 9 / 16); height: auto; border-radius: 18px; box-shadow: 0 14px 30px rgba(20,30,50,.18); }
+.storypic figcaption, .storyhint { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: center; margin: 8px 0 0; }
+.storypic a { color: inherit; }
 .storycard iframe { display: block; width: min(100%, 420px, (100vh - 90px) * 9 / 16); aspect-ratio: 9 / 16; margin: 0 auto; border: 0; border-radius: 18px; background: transparent; }
 /* phones: map, then badges, then the story, so badge effects stay right under the map */
 @media (max-width: 860px) {
@@ -284,8 +289,12 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
       </div>
     </section>
     <section class="storycard" id="story" aria-label="Instagram story">
-      <div class="colhead"><h2>The story</h2><span>Tap to advance · hold to pause</span></div>
-      <iframe src="story.html" title="2026 Instagram story, animated" loading="lazy"></iframe>
+      <div class="colhead"><h2>The story</h2>
+        <div class="seg storytabs" role="group" aria-label="Story view"><button type="button" data-sv="pic" aria-pressed="true">Picture</button><button type="button" data-sv="anim" aria-pressed="false">Animated</button></div></div>
+      <figure class="storypic" id="storyPic"><img src="pictures/final/2026-dec20-story.png" width="1080" height="1920" alt="My 2026 Instagram Story: map of all 14 flights, season pass, passport stamps and an itemized flight log" loading="lazy">
+        <figcaption>Posted Dec 20 · <a href="pictures/final/2026-dec20-story.png" download="2026-flights-story.png">Download picture ⬇</a></figcaption></figure>
+      <iframe id="storyAnim" data-src="story.html" title="2026 Instagram story, animated" hidden></iframe>
+      <p class="storyhint" id="storyHint" hidden>Tap to advance · hold to pause</p>
     </section>
     </div>
 
@@ -654,7 +663,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function flySeq(list, dur = 1000) { for (const f of list) await fly(f.i, dur); }
 
 // filters: bounce + fun fact
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
+document.querySelectorAll(".toolbar .seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
 // stat tiles: count up again
 document.getElementById("board").addEventListener("click", e => {
   const cell = e.target.closest(".cell"); if (!cell) return; pop(cell);
@@ -843,14 +852,22 @@ document.addEventListener("click", e => {
 });
 
 
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+document.querySelectorAll(".toolbar .seg button").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
-  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".toolbar .seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
   try { localStorage.setItem("flight-filter", filter); } catch (e) {}
   renderList();
 }));
-try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
+try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".toolbar .seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
 renderList();
+
+document.querySelector(".storytabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-sv]"); if (!b) return;
+  const anim = b.dataset.sv === "anim", fr = document.getElementById("storyAnim");
+  document.querySelectorAll(".storytabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.getElementById("storyPic").hidden = anim; fr.hidden = !anim; document.getElementById("storyHint").hidden = !anim;
+  if (anim && !fr.src) fr.src = fr.dataset.src;
+});
 </script>
 
 </html>

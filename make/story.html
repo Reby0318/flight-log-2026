@@ -82,14 +82,23 @@ const THEMES = {
     vars: { wall: "radial-gradient(ellipse at 50% 0%, #26396a, #0b1226 70%)", title: "#ffffff", hl: "#e8a33a", hlInk: "#0b1226", tape1: "rgba(232,163,58,.55)", tape2: "rgba(255,255,255,.28)", pp: "#e6e8ef", rc: "#fbf8f1", card: "#1a2539", legendInk: "#ffffff", eyeBg: "#e8a33a", eyeInk: "#0b1226" } },
   golden: { ...MAPLIGHT, water: "#d3e3e8", land: "#fbf3e7", land2: "#efe3d1", coast: "#d9c8b0", state: "#e6d8c2", americana: true, contrail: "rgba(255,248,238,.6)", plane: "#fff8ee",
     vars: { wall: "linear-gradient(170deg, #f6c08f 0%, #ea8d6b 45%, #8f4a6a 100%)", title: "#fff8ee", hl: "#fff8ee", hlInk: "#7a3350", tape1: "rgba(255,248,238,.6)", tape2: "rgba(255,214,170,.7)", pp: "#f7ede4", rc: "#fffaf3", card: "#fffaf3" } },
-  minimal: { ...MAPLIGHT, water: "#e6ebef", land: "#ffffff", land2: "#f2f2ef", coast: "#d3d3ce", state: "#e3e3de", contrail: "rgba(29,29,31,.22)", plane: "#1d1d1f", noTape: true, flat: true,
-    h1: "font-family:'Inter Tight';font-weight:800;font-size:84px;letter-spacing:-.02em;transform:none",
+  minimal: { ...MAPLIGHT, water: "#e6ebef", land: "#ffffff", land2: "#f2f2ef", coast: "#d3d3ce", state: "#e3e3de", label: "#1d1d1f", contrail: "transparent", plane: "transparent", noTape: true, flat: true,
+    font: "Inter Tight",
+    css: `h1 { font: 800 88px/1 'Inter Tight'; letter-spacing: -.03em; transform: none; top: 44px; }
+      h1 span { display: block; margin: 8px 0 0; padding: 0; background: none; color: #8a8a86; font: 500 52px/1 'Inter Tight'; letter-spacing: -.02em; transform: none; border-radius: 0; }
+      h1 small { transform: none; box-shadow: none; background: none; color: #1d1d1f; padding: 0; margin: 0 0 18px; font: 500 20px/1 'IBM Plex Mono'; letter-spacing: .24em; border-bottom: 2px solid #1d1d1f; padding-bottom: 10px; border-radius: 0; }
+      .legend div { font: 600 26px 'Inter Tight'; color: #1d1d1f; }
+      .ticket, .st { transform: none !important; }
+      .ticket { filter: none !important; box-shadow: 0 0 0 1.5px #1d1d1f; border-radius: 14px; top: 34px !important; height: 220px !important; }
+      .shield, .contrail { display: none; }
+      .passport { background: #fff; }
+      .passport .hd, .passport .no { font-family: 'IBM Plex Mono'; letter-spacing: .3em; color: #8a8a86; }`,
     vars: { wall: "#f6f4ef", title: "#1d1d1f", hl: "#1d1d1f", hlInk: "#f6f4ef", tape1: "transparent", tape2: "transparent", pp: "#ffffff", rc: "#ffffff", eyeBg: "#1d1d1f", eyeInk: "#f6f4ef" } },
 };
 const T = THEMES[(S && S.style) || "americana"] || THEMES.americana;
 { const pg = document.getElementById("pg").style; Object.entries(T.vars).forEach(([k, v]) => pg.setProperty("--" + k, v)); }
 { const css = document.createElement("style");
-  css.textContent = (T.h1 ? `h1 { ${T.h1} } h1 span { font-family: inherit; font-size: .7em; transform: none; margin-left: 0; }` : "")
+  css.textContent = (T.css || "")
     + (T.noTape ? ".tape, .pin { display: none; }" : "")
     + (T.flat ? ".mapcard, .passport, .receipt { transform: none !important; box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.06) !important; } .passport { border: 1px solid #e3e3de; }" : "");
   document.head.appendChild(css); }
@@ -136,12 +145,15 @@ document.getElementById("legend").innerHTML = counts.slice(0, 6).map(([a, n]) =>
   const items = fl.slice(0, 14).map(f => ({ f })).concat(fl.length ? [{ total: true }] : []);
   document.getElementById("passport").insertAdjacentHTML("beforeend", items.map((it, k) => {
     const col = k % 3, row = Math.floor(k / 3);
-    const x = 14 + col * 178 + ((k * 37) % 26) - 13, y = 78 + row * 164 + ((k * 53) % 30) - 15, rot = ((k * 47) % 30) - 15;
+    const j = T.flat ? 0 : 1, x = 14 + col * 178 + j * (((k * 37) % 26) - 13), y = 78 + row * 164 + j * (((k * 53) % 30) - 15), rot = j * (((k * 47) % 30) - 15);
     const ink = it.total ? "#1f4fa3" : inks[k % inks.length], shape = it.total ? 0 : k % 3;
     const box = shape === 0 ? "width:168px;height:168px;border-radius:50%;border:5px double" : shape === 1 ? "width:184px;height:132px;border-radius:8px;border:5px double" : "width:190px;height:136px;border-radius:50%;border:4px solid";
     const body = it.total ? `<small>ENTRIES</small><b>${fl.length}</b><small>${nf(TOTAL)} MI</small>`
       : `<small>ARRIVED</small><b>${it.f.to}</b><small>${MON[it.f.land.getMonth()]} ${it.f.land.getDate()}, ${it.f.land.getFullYear()}</small><small>${it.f.air.toUpperCase().slice(0, 16)}</small>`;
-    return `<div class="st" style="left:${x}px;top:${y}px;${box} ${ink};color:${ink};transform:rotate(${rot}deg)"><div>${body}</div></div>`;
+    // flat looks: center each stamp in its grid cell
+    const [sw, sh] = shape === 0 ? [168, 168] : shape === 1 ? [184, 132] : [190, 136];
+    const lx = T.flat ? 14 + col * 178 + (168 - sw) / 2 : x, ty = T.flat ? 78 + row * 164 + (168 - sh) / 2 : y;
+    return `<div class="st" style="left:${lx}px;top:${ty}px;${box} ${ink};color:${ink};transform:rotate(${rot}deg)"><div>${body}</div></div>`;
   }).join(""));
 })();
 
@@ -161,7 +173,7 @@ document.getElementById("legend").innerHTML = counts.slice(0, 6).map(([a, n]) =>
 })();
 
 /* ---------- contrail across the page ---------- */
-document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none" viewBox="0 0 1080 1920">
+document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg class="contrail" style="position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none" viewBox="0 0 1080 1920">
   <path d="M1100 120 C 860 150, 700 260, 640 300 S 120 520, 30 980 S 520 1960, 1120 1880" fill="none" stroke="${T.contrail}" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
   <g transform="translate(1010 128) rotate(172) scale(2.2)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="${T.plane}"/></g></svg>`);
 
@@ -172,7 +184,7 @@ document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="posi
   const parts = (LOG.name || "").toUpperCase().trim().split(/\s+/).filter(Boolean);
   const passenger = parts.length > 1 ? `${parts[parts.length - 1]} / ${parts.slice(0, -1).join("")}` : parts[0] || "";
   document.getElementById("pg").insertAdjacentHTML("beforeend", `
-  <div style="position:absolute;top:196px;left:700px;width:350px;height:250px;transform:rotate(7deg);z-index:9;display:grid;grid-template-columns:1fr 70px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))">
+  <div class="ticket" style="position:absolute;top:196px;left:700px;width:350px;height:250px;transform:rotate(7deg);z-index:9;display:grid;grid-template-columns:1fr 70px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))">
     <div style="background:#fbf8f1;border-radius:14px 0 0 14px;padding:18px 18px 16px;display:grid;align-content:space-between;font-family:'Inter Tight';color:#1d1d1f;border-right:3px dashed #cfc8b8">
       <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 13px 'Inter Tight';letter-spacing:.22em">SEASON PASS</span><span style="font:700 13px 'Inter Tight';letter-spacing:.1em;color:#8a7f6a">${YEAR}</span></div>
       <div style="font:400 64px/1 'Bebas Neue';letter-spacing:.02em">${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</div>
@@ -213,7 +225,7 @@ document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="posi
         <text x="140" y="96" text-anchor="middle" font-family="Bebas Neue" font-size="68" letter-spacing="6" fill="${NAVY}">FLY·${YEAR}</text>
         <text x="140" y="117" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="11" letter-spacing="4" fill="${NAVY}">SEASON ${YEAR} · ${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</text></svg></div>`;
   document.getElementById("pg").insertAdjacentHTML("beforeend", `${plate}
-    <div style="position:absolute;top:648px;left:62px;width:106px;transform:rotate(-6deg);z-index:9;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
+    <div class="shield" style="position:absolute;top:648px;left:62px;width:106px;transform:rotate(-6deg);z-index:9;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
       <svg viewBox="0 0 120 130" style="width:100%"><path d="M8 14 Q60 -4 112 14 Q116 70 60 126 Q4 70 8 14 Z" fill="#fff"/><path d="M14 18 Q60 3 106 18 L105 38 H15 Z" fill="${RED}"/><path d="M15 42 H105 Q104 82 60 118 Q16 82 15 42 Z" fill="${NAVY}"/>
         <text x="60" y="33" text-anchor="middle" font-family="Anton" font-size="13" letter-spacing="1.5" fill="#fff">FLIGHTS</text>
         <text x="60" y="92" text-anchor="middle" font-family="Anton" font-size="${fl.length > 99 ? 34 : 46}" fill="#fff">${fl.length}</text></svg></div>
@@ -268,8 +280,9 @@ window.ready = document.fonts.ready.then(() => {
   P.forEach(({ c, p: [x, y], left, dy }) => {
     svg.append("circle").attr("cx", x).attr("cy", y).attr("r", 10).attr("fill", T.dotFill).attr("stroke", T.dotStroke).attr("stroke-width", 4);
     const ox = left ? -16 : 16, t = svg.append("text").attr("x", x + ox).attr("y", y + dy).attr("text-anchor", left ? "end" : "start").attr("fill", T.label).attr("paint-order", "stroke").attr("stroke", T.labelHalo).attr("stroke-width", 5);
-    t.append("tspan").attr("font-family", "Caveat").attr("font-weight", 700).attr("font-size", busy ? 38 : 48).text(c);
-    if (!busy) t.append("tspan").attr("x", x + ox).attr("dy", 26).attr("font-family", "Caveat").attr("font-size", 26).text(AP[c].city.replace(/\s*\(.*\)/, ""));
+    const lf = T.font || "Caveat", big = T.font ? (busy ? 28 : 34) : (busy ? 38 : 48);
+    t.append("tspan").attr("font-family", lf).attr("font-weight", T.font ? 800 : 700).attr("font-size", big).text(c);
+    if (!busy) t.append("tspan").attr("x", x + ox).attr("dy", T.font ? 22 : 26).attr("font-family", lf).attr("font-weight", T.font ? 500 : 400).attr("font-size", T.font ? 18 : 26).text(AP[c].city.replace(/\s*\(.*\)/, ""));
   });
 });
 
