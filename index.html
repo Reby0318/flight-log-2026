@@ -76,10 +76,10 @@ main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); g
 @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
 
 .mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-.mapcol { display: grid; gap: 24px; min-width: 0; }
+.mapcol { display: grid; gap: 24px; min-width: 0; align-self: stretch; align-content: start; }
 /* the story fills the space under the map and stays in view while the flight list scrolls */
 .storycard { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
-.storycard iframe { display: block; width: 100%; max-width: 420px; aspect-ratio: 9 / 16; margin: 0 auto; border: 0; border-radius: 18px; background: #0a1330; }
+.storycard iframe { display: block; width: min(100%, 420px, (100vh - 90px) * 9 / 16); aspect-ratio: 9 / 16; margin: 0 auto; border: 0; border-radius: 18px; background: transparent; }
 /* phones: map, then badges, then the story, so badge effects stay right under the map */
 @media (max-width: 860px) {
   main > .mapcol, main > .side { display: contents; }
@@ -276,7 +276,7 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
       </div>
     </section>
     <section class="storycard" id="story" aria-label="Instagram story">
-      <div class="colhead"><h2>The story</h2><span>Tap · next  hold · pause</span></div>
+      <div class="colhead"><h2>The story</h2><span>Tap to advance · hold to pause</span></div>
       <iframe src="story.html" title="2026 Instagram story, animated" loading="lazy"></iframe>
     </section>
     </div>
