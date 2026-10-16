@@ -92,8 +92,23 @@ h1 span { color: var(--upcoming-text); }
 main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
 
-.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
-@media (max-width: 860px) { .mapcard { position: static; } }
+.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.mapcol { display: grid; gap: 24px; min-width: 0; align-self: stretch; align-content: start; }
+/* the story sits under the map and stays in view (below the maker bar) while the flight list scrolls */
+.storycard { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); }
+.storycard .colhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+.storycard .colhead h2 { font: 600 24px var(--display); text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+.storybox { position: relative; width: min(100%, 420px, (100vh - 170px) * 9 / 16); aspect-ratio: 9 / 16; margin: 0 auto; border-radius: 18px; overflow: hidden; box-shadow: 0 14px 30px rgba(20,30,50,.18); background: #0a1330; }
+.storybox iframe { position: absolute; border: 0; }
+#storyPicFrame { top: 0; left: 0; width: 1080px; height: 1920px; transform-origin: 0 0; pointer-events: none; }
+#storyAnim { inset: 0; width: 100%; height: 100%; background: transparent; }
+.storyfoot { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 10px; font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.storyfoot button { font: 600 13px var(--body); letter-spacing: 0; text-transform: none; color: #1d2b4a; background: #e8a33a; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.storyfoot button:disabled { opacity: .6; cursor: default; }
+@media (max-width: 860px) {
+  main > .mapcol, main > .side { display: contents; }
+  .mapcard { order: 1; } .badges { order: 2; } .storycard { order: 3; position: static; } .pilot { order: 4; } .side > .log { order: 5; }
+}
 svg { display: block; width: 100%; height: auto; }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -278,6 +293,7 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
   </header>
 
   <main>
+    <div class="mapcol">
     <section class="mapcard" aria-label="Route map">
       <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><button class="surprise" id="surprise" type="button">✦ Surprise me</button><span class="nowplaying" id="now"></span></div>
       <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of this year's flight routes"></svg>
@@ -286,6 +302,14 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
         <span><i class="up"></i>Dashed = upcoming</span>
       </div>
     </section>
+    <section class="storycard" id="story" aria-label="Your Instagram story">
+      <div class="colhead"><h2>Your story</h2>
+        <div class="seg storytabs" role="group" aria-label="Story view"><button type="button" data-sv="pic" aria-pressed="true">Picture</button><button type="button" data-sv="anim" aria-pressed="false">Animated</button></div></div>
+      <div class="storybox" id="storyBox"><iframe id="storyPicFrame" title="Your Instagram Story picture" tabindex="-1"></iframe><iframe id="storyAnim" title="Your animated story" hidden></iframe></div>
+      <div class="storyfoot" id="picFoot"><button type="button" id="dlStory">Download picture ⬇</button><span id="dlMsg" role="status"></span></div>
+      <div class="storyfoot" id="animFoot" hidden>Tap to advance · hold to pause</div>
+    </section>
+    </div>
 
     <div class="side">
       <section class="badges" aria-label="Badges">
@@ -659,7 +683,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function flySeq(list, dur = 1000) { for (const f of list) await fly(f.i, dur); }
 
 // filters: bounce + fun fact
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
+document.querySelectorAll(".toolbar .seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
 // stat tiles: count up again
 document.getElementById("board").addEventListener("click", e => {
   const cell = e.target.closest(".cell"); if (!cell) return; pop(cell);
@@ -853,17 +877,55 @@ document.addEventListener("click", e => {
 });
 
 
-document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+document.querySelectorAll(".toolbar .seg button").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f;
-  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  document.querySelectorAll(".toolbar .seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
   try { localStorage.setItem("flight-filter", filter); } catch (e) {}
   renderList();
 }));
-try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
+try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".toolbar .seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
 renderList();
 if (!FLIGHTS.length) document.getElementById("list").innerHTML = `<p class="meta">No flights yet. New bookings from your email show up here automatically.</p>`;
 </script>
 
+<script>
+/* ---------- your story: the picture (in your chosen style) or the animated version ---------- */
+(function () {
+  const ans = encodeURIComponent(flEncode(window.MAKER_ANSWERS || {}));
+  const pic = document.getElementById("storyPicFrame"), anim = document.getElementById("storyAnim"), box = document.getElementById("storyBox");
+  pic.src = `story.html?embed=1#a=${ans}`;
+  const fit = () => { pic.style.transform = `scale(${box.clientWidth / 1080})`; };
+  new ResizeObserver(fit).observe(box); fit();
+  document.querySelector(".storytabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-sv]"); if (!b) return;
+    const isAnim = b.dataset.sv === "anim";
+    document.querySelectorAll(".storytabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    pic.hidden = isAnim; anim.hidden = !isAnim;
+    document.getElementById("picFoot").hidden = isAnim; document.getElementById("animFoot").hidden = !isAnim;
+    if (isAnim && !anim.src) anim.src = `anim.html#a=${ans}`;
+  });
+  // download: the picture page draws itself into a PNG and hands it back
+  let reqId = 0;
+  document.getElementById("dlStory").addEventListener("click", () => {
+    const btn = document.getElementById("dlStory"), msg = document.getElementById("dlMsg"), id = ++reqId, A = window.MAKER_ANSWERS || {};
+    if (!(A.flights || []).length) { msg.textContent = "No flights yet"; return; }
+    btn.disabled = true; btn.textContent = "Creating PNG…"; msg.textContent = "";
+    const done = t => { btn.disabled = false; btn.textContent = "Download picture ⬇"; msg.textContent = t || ""; window.removeEventListener("message", onMsg); };
+    const onMsg = async e => {
+      if (!e.data || e.data.type !== "png" || e.data.id !== id) return;
+      if (e.data.error) { done("Couldn't create it in this browser"); return; }
+      const blob = await (await fetch(e.data.url)).blob(), file = new File([blob], `my-${A.year || ""}-flights-story.png`, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
+        try { await navigator.share({ files: [file], title: "My flights" }); done("Saved ✓"); return; } catch (err) {}
+      }
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+      done("Downloaded ✓");
+    };
+    window.addEventListener("message", onMsg);
+    pic.contentWindow.postMessage({ type: "export", id }, "*");
+  });
+})();
+</script>
 <script>
 // came here from the maker: go back to the form as it was; opened from a shared link: invite them to make their own
 (function () {

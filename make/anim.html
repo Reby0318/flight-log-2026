@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>if (window.self !== window.top) document.documentElement.classList.add("embed");</script>
+<style>[hidden]{display:none!important}
+/* embedded in the flight log page: transparent page, frame fills the iframe */
+html.embed { color-scheme: normal; }
+html.embed body { background: transparent; padding: 0; }
+html.embed .frame { width: min(100vw, 100dvh * 9 / 16); box-shadow: none; }
+</style>
+<script>window.LOGO_BASE = "../pictures/logos-official/";</script>
+<title>My Flight Stories</title>
+<script src="../pictures/logos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="../pictures/world-countries.js"></script>
+<script src="data.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one 9:16 story frame centered on the page; slides stack inside it, tap left/right to move, hold to pause. Single dark "sky" world by design. */
+:root {
+  color-scheme: dark;
+  --page: #070b16;
+  --ink: #ffffff;
+  --soft: rgba(255,255,255,.72);
+  --faint: rgba(255,255,255,.16);
+  --land: rgba(255,255,255,.07);
+  --coast: rgba(255,255,255,.28);
+  --amber: #ffc24b;
+  --sky-night: linear-gradient(170deg, #0a1330 0%, #1b2d63 100%);
+  --sky-dawn: linear-gradient(170deg, #12325a 0%, #3f6e8f 55%, #d98b6a 100%);
+  --sky-day: linear-gradient(170deg, #0f4c8a 0%, #2f8fd0 100%);
+  --sky-sunset: linear-gradient(170deg, #1b1f4b 0%, #8a3d5c 60%, #f08a4b 100%);
+  --sky-deep: linear-gradient(170deg, #050a1a 0%, #13254f 100%);
+  --display: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--page); color: var(--ink); font-family: var(--body); display: grid; place-items: center; padding-inline: 16px; padding-block: 16px; }
+
+.frame {
+  position: relative; width: min(calc(100vw - 32px), calc((100dvh - 32px) * 9 / 16), 470px); aspect-ratio: 9 / 16;
+  border-radius: 18px; overflow: hidden; container-type: inline-size; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5); touch-action: manipulation;
+}
+.slide { position: absolute; inset: 0; padding: 16cqw 7cqw 7cqw; display: flex; flex-direction: column; gap: 3.4cqw; opacity: 0; visibility: hidden; transition: opacity .35s; }
+.slide.on { opacity: 1; visibility: visible; }
+.slide[data-sky="night"] { background: var(--sky-night); }
+.slide[data-sky="dawn"] { background: var(--sky-dawn); }
+.slide[data-sky="day"] { background: var(--sky-day); }
+.slide[data-sky="sunset"] { background: var(--sky-sunset); }
+.slide[data-sky="deep"] { background: var(--sky-deep); }
+
+/* top chrome */
+.bars { position: absolute; top: 3cqw; left: 3cqw; right: 3cqw; display: flex; gap: 1cqw; z-index: 5; }
+.bar { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,.3); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: #fff; }
+.who { position: absolute; top: 6.5cqw; left: 4cqw; right: 4cqw; display: flex; align-items: center; gap: 2.4cqw; z-index: 5; font-size: 3.4cqw; }
+.avatar { width: 8cqw; height: 8cqw; border-radius: 50%; background: var(--amber); color: #1b1f4b; display: grid; place-items: center; font: 900 4.4cqw var(--display); }
+.who b { font-weight: 600; }
+.who span { color: var(--soft); }
+.who .paused { margin-left: auto; font-family: var(--mono); font-size: 2.8cqw; letter-spacing: .1em; color: var(--soft); }
+
+.tap { position: absolute; top: 0; bottom: 0; z-index: 4; }
+.tap-prev { left: 0; width: 32%; }
+.tap-next { right: 0; width: 68%; }
+
+.eyebrow { font-family: var(--mono); font-size: 3cqw; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+.month { font-family: var(--display); font-weight: 900; font-size: 19cqw; line-height: .85; text-transform: uppercase; margin-top: 1cqw; }
+.cap { font-size: 4.2cqw; line-height: 1.3; color: var(--soft); }
+.cap b { color: var(--ink); }
+
+.map { width: 100%; flex: 1 1 0; min-height: 36cqw; }
+.map .arc { fill: none; stroke: #fff; stroke-linecap: round; }
+.map .arc.up { stroke: var(--amber); }
+.map .ghost { fill: none; stroke: rgba(255,255,255,.22); stroke-dasharray: 2 6; stroke-linecap: round; }
+.map .ghost.up { stroke: var(--amber); opacity: .55; stroke-dasharray: 8 7; }
+
+.cards { display: grid; gap: 1.8cqw; }
+.card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 3cqw; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); border-radius: 3cqw; padding: 2cqw 3cqw; backdrop-filter: blur(6px); transform: translateY(6cqw); opacity: 0; transition: transform .45s cubic-bezier(.2,.9,.3,1.3), opacity .3s; }
+.slide.on .card { transform: none; opacity: 1; }
+.card .route { font: 900 5.8cqw/1 var(--display); letter-spacing: .02em; }
+.card .meta { font-size: 3cqw; color: var(--soft); margin-top: .6cqw; }
+.card .when { font: 500 3cqw var(--mono); text-align: right; color: var(--soft); }
+.card .when b { display: block; font: 900 5.4cqw/1 var(--display); color: var(--ink); }
+.stamp { font: 500 2.6cqw var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: .6cqw 1.6cqw; border-radius: 99px; display: inline-block; margin-top: 1cqw; }
+.stamp.flown { background: rgba(255,255,255,.18); }
+.stamp.up { background: var(--amber); color: #1b1f4b; }
+
+.al { position: relative; display: inline-grid; place-items: center; width: 22cqw; height: 8.4cqw; background: #fff !important; border-radius: 1.6cqw; font: 500 3.6cqw var(--mono); color: #fff; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+
+/* intro */
+.intro { justify-content: center; text-align: left; }
+.intro h1 { font: 900 25cqw/.82 var(--display); text-transform: uppercase; margin: 0; }
+.intro h1 span { color: var(--amber); display: block; }
+.intro p { font-size: 4.6cqw; color: var(--soft); margin: 2cqw 0 0; }
+.hint { position: absolute; bottom: 9cqw; left: 0; right: 0; text-align: center; font: 500 3.2cqw var(--mono); letter-spacing: .14em; color: var(--soft); animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateX(2cqw); } }
+.sky-plane { position: absolute; top: 24%; left: -15%; width: 14cqw; animation: fly 7s linear infinite; opacity: .9; }
+@keyframes fly { to { left: 115%; top: 12%; } }
+.cloud { position: absolute; background: rgba(255,255,255,.12); border-radius: 99px; filter: blur(1px); animation: drift 14s linear infinite; }
+@keyframes drift { from { transform: translateX(110cqw); } to { transform: translateX(-60cqw); } }
+
+/* airlines */
+.rows { display: grid; gap: 3.4cqw; margin-top: 3cqw; }
+.al.big { width: 30cqw; height: 11cqw; }
+.row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 3cqw; font-size: 4cqw; opacity: 0; transform: scale(.6); transition: transform .4s cubic-bezier(.2,.9,.3,1.5), opacity .3s; }
+.slide.on .row { opacity: 1; transform: none; }
+.row .track { height: 2.4cqw; border-radius: 99px; background: var(--faint); overflow: hidden; }
+.row .track i { display: block; height: 100%; width: 0; border-radius: 99px; background: #fff; transition: width .9s cubic-bezier(.2,.8,.2,1) .3s; }
+.row b { font: 900 6cqw var(--display); }
+
+/* stats */
+.big { display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; }
+.big div { background: rgba(255,255,255,.08); border-radius: 3cqw; padding: 2.6cqw 3.2cqw; }
+.big b { display: block; font: 900 10.5cqw/1 var(--display); font-variant-numeric: tabular-nums; }
+.big small { font: 500 2.8cqw var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.globe { display: grid; grid-template-columns: auto 1fr; gap: 4cqw; align-items: center; font-size: 4cqw; color: var(--soft); }
+.globe svg { width: 13cqw; height: 13cqw; }
+.next { background: var(--amber); color: #1b1f4b; border-radius: 3cqw; padding: 3.6cqw 4cqw; display: grid; gap: .6cqw; }
+.next small { font: 500 2.8cqw var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.next b { font: 900 8cqw/1 var(--display); }
+.replay { position: relative; z-index: 6; align-self: center; margin-top: auto; font: 600 4cqw var(--body); color: #1b1f4b; background: #fff; border: 0; border-radius: 99px; padding: 2.6cqw 7cqw; cursor: pointer; }
+.replay:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-plane, .cloud, .hint { animation: none; }
+  .card, .row, .row .track i, .slide { transition: none; }
+}
+</style>
+
+<div class="frame" id="frame" tabindex="0" aria-label="Flight stories. Tap the right side or press the right arrow for the next story, the left side for the previous one. Hold or press space to pause.">
+  <div class="bars" id="bars"></div>
+  <div class="who">
+    <div class="avatar" id="avatar">✈</div>
+    <b id="who"></b><span id="whoWhen"></span>
+    <span class="paused" id="paused" hidden>PAUSED</span>
+  </div>
+  <div id="slides"></div>
+  <div class="tap tap-prev" id="tapPrev" aria-hidden="true"></div>
+  <div class="tap tap-next" id="tapNext" aria-hidden="true"></div>
+</div>
+
+<script>
+/* ---------- the visitor's flights: from the maker (#a=...) or what they last entered ---------- */
+let ANS = null;
+try { const h = /[#&]a=([^&]+)/.exec(location.hash); ANS = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
+const LOG = buildFlightLog(ANS || { year: new Date().getFullYear(), flights: [] });
+const YEAR = LOG.year, AP = LOG.airports;
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const FLIGHTS = LOG.flights.slice().sort((a, b) => (a.d + (a.t || "")).localeCompare(b.d + (b.t || "")));
+const AIRS = [...new Set(FLIGHTS.map(f => f.air))];
+const CODE = Object.fromEntries(AIRS.map(a => [a, (LOG.airlines[a] || {}).code || ""]));
+const first = (LOG.name || "").trim().split(/\s+/)[0] || "";
+document.getElementById("who").textContent = first ? first.toLowerCase() : "my flights";
+document.getElementById("avatar").textContent = first ? first[0].toUpperCase() : "✈";
+
+// Live status: a flight counts as "flown" only after it has landed (arrival airport's local time).
+const NOW = (() => { const q = /[?&]asof=(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(location.search); return q ? new Date(q[1]) : new Date(); })();
+const today = new Date(NOW); today.setHours(0, 0, 0, 0);
+const nthSunday = (y, m, n) => { const d = new Date(Date.UTC(y, m, 1)); return Date.UTC(y, m, 1 + ((7 - d.getUTCDay()) % 7) + 7 * (n - 1)); };
+function landedAt(f) {
+  const [y, m, d] = f.d.split("-").map(Number);
+  const mins = s => { const r = /(\d+):(\d+)\s*(AM|PM)/.exec(s || ""); if (!r) return null; let h = +r[1] % 12; if (r[3] === "PM") h += 12; return h * 60 + +r[2]; };
+  const [depS, arrS] = (f.t || "").split("→");
+  const dep = mins(depS); let arr = mins(arrS), plus = 0;
+  if (arr === null) arr = dep !== null ? dep + 240 : 23 * 60 + 59;
+  else if (dep !== null && arr < dep) plus = 1;
+  const a = AP[f.to], day = Date.UTC(y, m - 1, d + plus), dst = a.dst !== false && day >= nthSunday(y, 2, 2) && day < nthSunday(y, 10, 1);
+  return new Date(Date.UTC(y, m - 1, d + plus, 0, arr + ((a.tz ?? 8) - (dst ? 1 : 0)) * 60));
+}
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+function miles(a, b) { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; const h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * 3958.8 * Math.asin(Math.sqrt(h)); }
+FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = landedAt(f) > NOW; f.mi = miles(AP[f.from], AP[f.to]); });
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const city = c => AP[c].city.replace(/\s*\(.*\)/, "");
+// official logo when we have one, otherwise the airline's name
+const badge = (air, big) => { const c = CODE[air];
+  if (window.LOGO_SRC && LOGO_SRC[c]) { const [fw, fh] = (window.LOGO_FIT || {})[c] || [.8, .7];
+    return `<span class="al${big ? " big" : ""}" title="${air}"><img src="${LOGO_SRC[c]()}" alt="${air}" style="position:absolute;left:${(1 - fw) * 50}%;top:${(1 - fh) * 50}%;width:${fw * 100}%;height:${fh * 100}%;object-fit:contain"></span>`; }
+  return `<span class="al${big ? " big" : ""}" title="${air}" style="display:grid;place-items:center;color:#1d2b4a;font:700 ${big ? 3.2 : 2.6}cqw var(--body);text-align:center;line-height:1.05;padding:0 1cqw">${air}</span>`; };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PLANE = `<path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="#fff"/>`;
+
+/* ---------- trips: one slide per month with flights, captions written from the data ---------- */
+const SKIES = ["night", "dawn", "day", "sunset"];
+const longest = FLIGHTS.reduce((a, b) => (!a || b.mi > a.mi ? b : a), null);
+const TRIPS = [];
+FLIGHTS.forEach(f => { const m = f.date.getMonth(); let t = TRIPS.find(x => x.mo === m); if (!t) TRIPS.push(t = { mo: m, f: [] }); t.f.push(f.i); });
+TRIPS.forEach((t, k) => {
+  const fl = t.f.map(i => FLIGHTS[i]), airs = [...new Set(fl.map(f => f.air))];
+  t.m = MONTH[t.mo]; t.sky = SKIES[k % SKIES.length];
+  const redeyes = fl.filter(f => { const h = /(\d+):\d+\s*(AM|PM)/.exec(f.t || ""); if (!h) return false; const hr = (+h[1] % 12) + (h[2] === "PM" ? 12 : 0); return hr >= 22 || hr < 4; }).length;
+  if (k === 0) t.cap = `<b>First flight of the year.</b> ${city(fl[0].from)} to ${city(fl[0].to)} on ${fl[0].air}.`;
+  else if (fl.includes(longest) && FLIGHTS.length > 2) t.cap = `<b>The longest flight:</b> ${fmt(longest.mi)} miles from ${city(longest.from)} to ${city(longest.to)}.`;
+  else if (k === TRIPS.length - 1 && TRIPS.length > 2) t.cap = `<b>Last flight${fl.length > 1 ? "s" : ""} of the year</b>, ending in ${city(fl[fl.length - 1].to)}.`;
+  else if (fl.length === 1) t.cap = `<b>${city(fl[0].from)} to ${city(fl[0].to)}</b> on ${fl[0].air}, ${fmt(fl[0].mi)} miles.`;
+  else t.cap = `<b>${fl.length} flights${redeyes ? `, ${redeyes} red-eye${redeyes > 1 ? "s" : ""}` : ""}</b> on ${airs.length === 1 ? airs[0] : airs.length + " airlines"}.`;
+});
+
+/* ---------- map: real coastlines fitted to each month's airports ---------- */
+const NS = "http://www.w3.org/2000/svg";
+const mk = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent.appendChild(n); return n; };
+const LANDS = topojson.feature(WORLD, WORLD.objects.countries);
+function drawMap(svg, flights) {
+  const W = 560, H = 487, codes = [...new Set(flights.flatMap(f => [f.from, f.to]))], ll = codes.map(c => [AP[c].lon, AP[c].lat]);
+  let lon0 = Math.min(...ll.map(p => p[0])), lon1 = Math.max(...ll.map(p => p[0])), lat0 = Math.min(...ll.map(p => p[1])), lat1 = Math.max(...ll.map(p => p[1]));
+  const padLon = Math.max(3, (lon1 - lon0) * .25), padLat = Math.max(2.5, (lat1 - lat0) * .25); lon0 -= padLon; lon1 += padLon; lat0 -= padLat; lat1 += padLat;
+  const wide = lon1 - lon0 > 90 || lat1 - lat0 > 55;
+  const proj = (wide ? d3.geoNaturalEarth1() : d3.geoConicConformal().parallels([lat0 + (lat1 - lat0) / 3, lat1 - (lat1 - lat0) / 3])).rotate([-(lon0 + lon1) / 2, 0])
+    .fitExtent([[24, 24], [W - 24, H - 24]], { type: "MultiPoint", coordinates: [[lon0, lat0], [lon1, lat0], [lon1, lat1], [lon0, lat1], [(lon0 + lon1) / 2, lat1], [(lon0 + lon1) / 2, lat0]] });
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  const path = d3.geoPath(proj);
+  mk("path", { d: path(LANDS), fill: "var(--land)", stroke: "var(--coast)", "stroke-width": 1.4 }, svg);
+  const pt = c => proj([AP[c].lon, AP[c].lat]);
+  const groups = {}, out = [];
+  flights.forEach(f => {
+    const key = [f.from, f.to].sort().join("-"), n = (groups[key] = (groups[key] || 0) + 1) - 1;
+    const [a, b] = key.split("-").map(pt);
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, off = (.14 + .1 * n) * len;
+    const C = [(a[0] + b[0]) / 2 - dy / len * off, (a[1] + b[1]) / 2 + dx / len * off];
+    const d = `M${pt(f.from).join(",")} Q${C.join(",")} ${pt(f.to).join(",")}`;
+    mk("path", { d, class: "ghost" + (f.up ? " up" : ""), "stroke-width": 2.4 }, svg);
+    const arc = mk("path", { d, class: "arc" + (f.up ? " up" : ""), "stroke-width": 3.2 }, svg);
+    const plane = mk("g", { opacity: 0 }, svg); plane.innerHTML = PLANE;
+    out.push({ f, arc, plane, len: arc.getTotalLength(), k: 1 });
+  });
+  const P = codes.map(c => ({ c, p: pt(c) }));
+  P.forEach(({ c, p: [x, y] }) => {
+    const near = P.find(q => q.c !== c && Math.hypot(q.p[0] - x, q.p[1] - y) < 70);
+    const left = x > W - 110 || (near && near.p[0] > x), oy = near && !left && near.p[1] < y ? 22 : 0;
+    mk("circle", { cx: x, cy: y, r: 9, fill: "rgba(255,255,255,.25)" }, svg);
+    mk("circle", { cx: x, cy: y, r: 5, fill: "#fff" }, svg);
+    const t = mk("text", { x: x + (left ? -14 : 14), y: y + oy + 8, "text-anchor": left ? "end" : "start", fill: "#fff", "font-family": "var(--display)", "font-weight": 900, "font-size": 26 }, svg);
+    t.textContent = c;
+  });
+  return out;
+}
+
+function fly(items, onDone) {
+  items.forEach(it => { it.arc.style.strokeDasharray = it.len; it.arc.style.strokeDashoffset = it.len; it.plane.setAttribute("opacity", 0); });
+  if (reduce) { items.forEach(it => { it.arc.style.strokeDashoffset = 0; }); return () => {}; }
+  const dur = 1300, gap = 250, t0 = performance.now(); let raf;
+  const step = now => {
+    let busy = false;
+    items.forEach((it, i) => {
+      const t = Math.min(1, Math.max(0, (now - t0 - i * (dur + gap)) / dur));
+      if (t < 1) busy = true;
+      const e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      it.arc.style.strokeDashoffset = it.len * (1 - e);
+      if (t > 0 && t < 1) {
+        const p = it.arc.getPointAtLength(it.len * e), q = it.arc.getPointAtLength(Math.min(it.len, it.len * e + 1));
+        const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+        it.plane.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${ang}) scale(${1.5 * it.k})`);
+        it.plane.setAttribute("opacity", 1);
+      } else it.plane.setAttribute("opacity", 0);
+    });
+    if (busy) raf = requestAnimationFrame(step); else if (onDone) onDone();
+  };
+  raf = requestAnimationFrame(step);
+  return () => cancelAnimationFrame(raf);
+}
+
+/* ---------- slides ---------- */
+const slidesEl = document.getElementById("slides");
+const SLIDES = [];
+function addSlide(html, sky, opts = {}) {
+  const el = document.createElement("section");
+  el.className = "slide" + (opts.cls ? " " + opts.cls : ""); el.dataset.sky = sky; el.innerHTML = html;
+  slidesEl.appendChild(el);
+  SLIDES.push({ el, dur: opts.dur || 6000, enter: opts.enter || (() => () => {}), label: opts.label || "" });
+  return el;
+}
+const totalMi = FLIGHTS.reduce((s, f) => s + f.mi, 0);
+
+// intro
+addSlide(`
+  <div class="cloud" style="top:18%;width:40cqw;height:9cqw"></div>
+  <div class="cloud" style="top:64%;width:28cqw;height:7cqw;animation-delay:-6s"></div>
+  <svg class="sky-plane" viewBox="-12 -10 24 20">${PLANE}</svg>
+  <h1>${YEAR}<span>in the air</span></h1>
+  <p>${FLIGHTS.length ? `${FLIGHTS.length} flight${FLIGHTS.length === 1 ? "" : "s"} · ${AIRS.length} airline${AIRS.length === 1 ? "" : "s"} · ${fmt(totalMi)} miles` : "Add your flights in the maker to fill this story"}</p>
+  <div class="hint">${FLIGHTS.length ? "TAP TO TAKE OFF →" : "NO FLIGHTS YET"}</div>`, "sunset", { cls: "intro", dur: FLIGHTS.length ? 4500 : 0, label: `${YEAR} flights` });
+
+TRIPS.forEach((trip, ti) => {
+  const fl = trip.f.map(i => FLIGHTS[i]), anyUp = fl.some(f => f.up), shown = fl.slice(0, 4);
+  const el = addSlide(`
+    <div>
+      <div class="eyebrow">Trip ${ti + 1} of ${TRIPS.length}${anyUp ? " · coming up" : ""}</div>
+      <div class="month">${trip.m}</div>
+    </div>
+    <div class="cap">${trip.cap}</div>
+    <svg class="map" role="img" aria-label="Route map for ${trip.m}"></svg>
+    <div class="cards">${shown.map((f, j) => `
+      <div class="card" style="transition-delay:${200 + j * 120}ms">
+        ${badge(f.air)}
+        <div><div class="route">${f.from} → ${f.to}</div>
+          <div class="meta">${f.air}${f.no ? " · " + f.no : ""} · ${fmt(f.mi)} mi</div>
+          <span class="stamp ${f.up ? "up" : "flown"}">${f.up ? "Coming up" : "Flown"}</span></div>
+        <div class="when">${MON[f.date.getMonth()].toUpperCase()}<b>${f.date.getDate()}</b>${(f.t || "").split(" → ")[0]}</div>
+      </div>`).join("")}${fl.length > shown.length ? `<div class="meta" style="text-align:center">+ ${fl.length - shown.length} more this month</div>` : ""}
+    </div>`, trip.sky, { dur: 2200 + Math.min(fl.length, 6) * 1550, label: trip.m });
+  const items = drawMap(el.querySelector(".map"), fl);
+  SLIDES[SLIDES.length - 1].enter = () => fly(items);
+});
+
+if (FLIGHTS.length) {
+  // airlines
+  const counts = AIRS.map(a => [a, FLIGHTS.filter(f => f.air === a).length]).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const maxC = counts[0][1], tie = counts.filter(c => c[1] === maxC).length > 1;
+  addSlide(`
+    <div><div class="eyebrow">Your airlines</div><div class="month">${AIRS.length} crew${AIRS.length === 1 ? "" : "s"}</div></div>
+    <div class="cap">${tie ? `<b>A tie at the top:</b> ${counts.filter(c => c[1] === maxC).map(c => c[0]).join(" and ")}, ${maxC} each.` : `<b>${counts[0][0]} flew you most</b>, ${maxC} time${maxC === 1 ? "" : "s"}.`}</div>
+    <div class="rows">${counts.map(([a, n], j) => `
+      <div class="row" style="transition-delay:${j * 110}ms">${badge(a, true)}
+        <span class="track"><i data-w="${(n / maxC) * 100}"></i></span><b>${n}</b></div>`).join("")}
+    </div>`, "deep", { dur: 6000, label: "Airlines" });
+  SLIDES[SLIDES.length - 1].enter = function () {
+    const bars = this.el.querySelectorAll(".track i");
+    bars.forEach(b => b.style.width = "0");
+    requestAnimationFrame(() => requestAnimationFrame(() => bars.forEach(b => b.style.width = b.dataset.w + "%")));
+    return () => {};
+  };
+
+  // wrap-up
+  const visits = {}; FLIGHTS.forEach(f => { visits[f.from] = (visits[f.from] || 0) + 1; visits[f.to] = (visits[f.to] || 0) + 1; });
+  const hub = Object.entries(visits).sort((a, b) => b[1] - a[1])[0];
+  const next = FLIGHTS.find(f => f.up), days = next ? Math.round((next.date - today) / 864e5) : 0;
+  const laps = totalMi / 24901, pct = Math.round(laps * 100);
+  addSlide(`
+    <div><div class="eyebrow">The whole year</div><div class="month">By the numbers</div></div>
+    <div class="big">
+      <div><b data-n="${FLIGHTS.length}">0</b><small>Flights</small></div>
+      <div><b data-n="${Math.round(totalMi)}">0</b><small>Miles</small></div>
+      <div><b data-n="${Object.keys(visits).length}">0</b><small>Airports</small></div>
+      <div><b data-n="${hub[1]}">0</b><small>Times through ${hub[0]}</small></div>
+    </div>
+    <div class="globe">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="4"/>
+        <circle cx="20" cy="20" r="16" fill="none" stroke="#ffc24b" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(Math.min(1, laps) * 100.5).toFixed(1)} 100.5" transform="rotate(-90 20 20)"/></svg>
+      <div>${laps >= 1 ? `That's <b style="color:#fff">${laps.toFixed(1)} times around the Earth</b>.` : `That's <b style="color:#fff">${pct}% of the way around the Earth</b>.`}</div>
+    </div>
+    ${next ? `<div class="next"><small>Next takeoff</small><b>${days === 0 ? "Today" : days === 1 ? "Tomorrow" : "In " + days + " days"}</b><span>${MON[next.date.getMonth()]} ${next.date.getDate()} · ${next.from} → ${next.to} · ${next.air}</span></div>` : ""}
+    <button class="replay" id="replay" type="button">↺ Watch again</button>`, "night", { dur: 0, label: "The year" });
+  SLIDES[SLIDES.length - 1].enter = function () {
+    const nums = this.el.querySelectorAll("[data-n]");
+    if (reduce) { nums.forEach(n => n.textContent = fmt(+n.dataset.n)); return () => {}; }
+    const t0 = performance.now(); let raf;
+    const step = now => {
+      const t = Math.min(1, (now - t0) / 1400), e = 1 - Math.pow(1 - t, 3);
+      nums.forEach(n => n.textContent = fmt(+n.dataset.n * e));
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  };
+}
+
+/* ---------- player ---------- */
+const barsEl = document.getElementById("bars");
+barsEl.innerHTML = SLIDES.map(() => `<div class="bar"><i></i></div>`).join("");
+const fills = [...barsEl.querySelectorAll("i")];
+const pausedEl = document.getElementById("paused"), whoWhen = document.getElementById("whoWhen");
+let cur = -1, elapsed = 0, last = 0, paused = false, stop = () => {};
+function show(i) {
+  i = Math.max(0, Math.min(SLIDES.length - 1, i));
+  stop();
+  SLIDES.forEach((s, j) => s.el.classList.toggle("on", j === i));
+  fills.forEach((f, j) => f.style.width = j < i ? "100%" : "0");
+  cur = i; elapsed = 0; last = performance.now();
+  whoWhen.textContent = SLIDES[i].label;
+  stop = SLIDES[i].enter.call(SLIDES[i]) || (() => {});
+}
+function tick(now) {
+  const s = SLIDES[cur];
+  if (!paused && s.dur) {
+    elapsed += now - last;
+    fills[cur].style.width = Math.min(100, elapsed / s.dur * 100) + "%";
+    if (elapsed >= s.dur && cur < SLIDES.length - 1) show(cur + 1);
+  } else if (!s.dur) fills[cur].style.width = "100%";
+  last = now;
+  requestAnimationFrame(tick);
+}
+function setPaused(p) { paused = p; pausedEl.hidden = !p; }
+let holdTimer = null, held = false;
+function bindTap(el, dir) {
+  el.addEventListener("pointerdown", () => { held = false; holdTimer = setTimeout(() => { held = true; setPaused(true); }, 220); });
+  el.addEventListener("pointerup", () => { clearTimeout(holdTimer); if (held) { setPaused(false); return; } show(cur + dir); });
+  el.addEventListener("pointerleave", () => { clearTimeout(holdTimer); if (held) { held = false; setPaused(false); } });
+}
+bindTap(document.getElementById("tapPrev"), -1);
+bindTap(document.getElementById("tapNext"), 1);
+const replay = document.getElementById("replay");
+if (replay) replay.addEventListener("click", e => { e.stopPropagation(); setPaused(false); show(0); });
+const frame = document.getElementById("frame");
+frame.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); }
+  else if (e.key === " ") { setPaused(!paused); e.preventDefault(); }
+});
+document.addEventListener("visibilitychange", () => { last = performance.now(); });
+const start = /[#&]s(\d+)$/.exec(location.hash);
+show(start ? +start[1] : 0);
+requestAnimationFrame(t => { last = t; tick(t); });
+frame.focus({ preventScroll: true });
+</script>
+
+</html>
