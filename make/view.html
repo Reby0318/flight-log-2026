@@ -11,7 +11,8 @@
 (function () {
   let S = null;
   try { const h = /[#&]a=([^&]+)/.exec(location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
-  window.FLIGHT_LOG = buildFlightLog(S || { year: new Date().getFullYear(), flights: [] });
+  window.MAKER_ANSWERS = S || { year: new Date().getFullYear(), flights: [] };
+  window.FLIGHT_LOG = buildFlightLog(window.MAKER_ANSWERS);
 })();
 </script>
 <script>window.LOGO_BASE = window.LOGO_BASE || "../pictures/logos-official/";</script>
@@ -58,6 +59,13 @@
 
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+/* maker bar: always-visible way back to the form, plus a copyable link */
+.mkbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; background: var(--ink); color: var(--bg); }
+.mkback { font: 600 15px var(--body); color: #1d2b4a; background: #e8a33a; border-radius: 999px; padding: 8px 16px; text-decoration: none; white-space: nowrap; }
+.mkmid { flex: 1; text-align: center; font: 500 13px var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mkcopy { font: 600 14px var(--body); color: var(--bg); background: none; border: 1.5px solid currentColor; border-radius: 999px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+.mkback:focus-visible, .mkcopy:focus-visible { outline: 2px solid #e8a33a; outline-offset: 2px; }
+@media (max-width: 480px) { .mkmid { display: none; } .mkbar { justify-content: space-between; } }
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 20px; display: grid; gap: 24px; }
 
 header { display: grid; gap: 18px; }
@@ -254,6 +262,11 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .modal .box .pcs { justify-self: end; font: 700 14px var(--mono); border: 2px dashed var(--pc); color: var(--pc); padding: 4px 8px; transform: rotate(-6deg); }
 </style>
 
+<nav class="mkbar" aria-label="Flight log maker">
+  <a class="mkback" id="mkBack" href="index.html">← Back to editing</a>
+  <span class="mkmid" id="mkMid">Your flight log</span>
+  <button class="mkcopy" id="mkCopy" type="button">Copy link</button>
+</nav>
 <div class="wrap">
   <header>
     <div>
@@ -849,6 +862,22 @@ document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click"
 try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
 renderList();
 if (!FLIGHTS.length) document.getElementById("list").innerHTML = `<p class="meta">No flights yet. New bookings from your email show up here automatically.</p>`;
+</script>
+
+<script>
+// came here from the maker: go back to the form as it was; opened from a shared link: invite them to make their own
+(function () {
+  if (/[?&]embed=1/.test(location.search)) { document.querySelector(".mkbar").remove(); return; } // inside the maker's preview
+  let fromMaker = false; try { fromMaker = sessionStorage.getItem("from-maker") === "1"; } catch (e) {}
+  const back = document.getElementById("mkBack");
+  if (fromMaker) back.addEventListener("click", e => { if (history.length > 1 && /\/make\/(index\.html)?/.test(document.referrer)) { e.preventDefault(); history.back(); } });
+  else { back.textContent = "✈ Make your own"; }
+  document.getElementById("mkMid").textContent = `${FLIGHT_LOG.name ? FLIGHT_LOG.name.split(" ")[0] + "'s" : "Your"} ${FLIGHT_LOG.year} flight log`;
+  document.getElementById("mkCopy").addEventListener("click", async e => {
+    const b = e.currentTarget, url = location.href.split("?")[0].split("#")[0] + "#a=" + encodeURIComponent(flEncode(window.MAKER_ANSWERS || {}));
+    try { await navigator.clipboard.writeText(url); b.textContent = "Copied ✓"; setTimeout(() => b.textContent = "Copy link", 1800); } catch (err) { prompt("Copy this link:", url); }
+  });
+})();
 </script>
 
 </html>

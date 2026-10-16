@@ -111,7 +111,7 @@ input[type=date], input[type=time] { min-height: 46px; }
       <h2><span class="n">4</span>Get your Story and your log</h2>
       <div class="row" style="margin-top:0">
         <button class="btn" id="download" type="button">Download my Story ⬇</button>
-        <a class="btn ghost" id="open" href="view.html" target="_blank" rel="noopener" style="text-decoration:none">Open my flight log ↗</a>
+        <a class="btn ghost" id="open" href="view.html" style="text-decoration:none">Open my flight log →</a>
         <button class="btn ghost" id="share" type="button">Copy link to my log</button>
       </div>
       <div class="msg ok" id="status" role="status"></div>
@@ -202,7 +202,7 @@ $("clear").onclick = () => { if (S.flights.length && !confirm("Remove all your f
 
 /* ---------- live preview ---------- */
 let timer = 0, lastLog = "";
-const link = page => `${page}?r=${Date.now()}#a=${encodeURIComponent(flEncode(S))}`;
+const link = page => `${page}?embed=1&r=${Date.now()}#a=${encodeURIComponent(flEncode(S))}`;
 function update() {
   try { localStorage.setItem("my-flight-log", JSON.stringify(S)); } catch (e) {}
   $("open").href = `view.html#a=${encodeURIComponent(flEncode(S))}`;
@@ -216,6 +216,7 @@ function tab(log) {
   if (log && lastLog !== JSON.stringify(S)) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); }
 }
 $("tStory").onclick = () => tab(false); $("tLog").onclick = () => tab(true);
+$("open").addEventListener("click", () => { try { sessionStorage.setItem("from-maker", "1"); } catch (e) {} });
 $("toPreview").onclick = () => $("preview").scrollIntoView({ behavior: "smooth", block: "start" });
 
 /* ---------- download the Story picture ---------- */
