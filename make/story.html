@@ -21,15 +21,15 @@
 html, body { width: 1080px; height: 1920px; overflow: hidden; background: #5d7896; }
 .pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--wall); color: var(--ink); }
 h1 { position: absolute; top: 34px; left: 56px; font: 700 92px/.95 var(--hand); transform: rotate(-2deg); color: var(--title); }
-h1 small { display: block; width: max-content; max-width: 700px; margin: 0 0 10px 6px; padding: 8px 18px 6px; border-radius: 999px; background: #fff; color: #262a33; font: 500 22px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; transform: rotate(2deg); box-shadow: 0 4px 10px rgba(0,0,0,.12); white-space: nowrap; overflow: hidden; }
+h1 small { display: block; width: max-content; max-width: 700px; margin: 0 0 10px 6px; padding: 8px 18px 6px; border-radius: 999px; background: var(--eyeBg, #fff); color: var(--eyeInk, #262a33); font: 500 22px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; transform: rotate(2deg); box-shadow: 0 4px 10px rgba(0,0,0,.12); white-space: nowrap; overflow: hidden; }
 h1 span { display: inline-block; margin: 6px 0 0 110px; font: 700 .78em/1 var(--hand); letter-spacing: .02em; background: var(--hl); color: var(--hlInk); padding: 6px 18px 2px; border-radius: 6px; transform: rotate(-3deg); }
 .pin { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, #d63a3a 60%); box-shadow: 0 4px 5px rgba(0,0,0,.3); z-index: 9; }
 .tape { position: absolute; height: 46px; background: repeating-linear-gradient(45deg, rgba(255,255,255,.38) 0 7px, transparent 7px 14px), var(--tape1); z-index: 9; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
-.mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
+.mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: var(--card, #fff); padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
 .mapcard svg { width: 964px; height: 486px; display: block; border-radius: 4px; }
 .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; padding: 16px 10px 0; }
-.legend div { display: flex; align-items: center; gap: 10px; font: 700 34px var(--hand); }
+.legend div { display: flex; align-items: center; gap: 10px; font: 700 34px var(--hand); color: var(--legendInk, #262a33); }
 .legend .sw { display: block; height: 5px; border-radius: 3px; margin-top: 6px; }
 
 .passport { position: absolute; top: 960px; left: 34px; width: 560px; height: 920px; transform: rotate(-3deg); border-radius: 10px; overflow: hidden; box-shadow: 0 18px 34px rgba(30,40,60,.22);
@@ -69,6 +69,31 @@ h1 span { display: inline-block; margin: 6px 0 0 110px; font: 700 .78em/1 var(--
 let S = null;
 try { const h = /[#&]a=([^&]+)/.exec(location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
 const LOG = buildFlightLog(S || { year: new Date().getFullYear(), flights: [] });
+
+/* ---------- five looks, picked in the maker (answers.style) ---------- */
+const MAPLIGHT = { water: "#cad7e4", land: "#f4f2ea", land2: "#e9e6db", coast: "#c9c4b4", state: "#d8d2c0", halo: "#fff", label: "#262a33", labelHalo: "rgba(255,255,255,.85)", dotFill: "#fff", dotStroke: "#262a33" };
+const THEMES = {
+  americana: { ...MAPLIGHT, americana: true, contrail: "rgba(255,255,255,.55)", plane: "#fff",
+    vars: { wall: "repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 6px), #5d7896", title: "#fbf6ec", hl: "#fbf6ec", hlInk: "#2f4560", tape1: "rgba(251,246,236,.6)", tape2: "rgba(160,210,255,.7)", pp: "#e9ecef", rc: "#fff" } },
+  scrapbook: { ...MAPLIGHT, water: "#cfe5f3", contrail: "rgba(38,42,51,.3)", plane: "#262a33",
+    vars: { wall: "radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.5px) 0 0/12px 12px, #eceef1", title: "#262a33", hl: "#ffd36b", hlInk: "#262a33", tape1: "rgba(255,226,140,.8)", tape2: "rgba(160,210,255,.75)", pp: "#dfeae5", rc: "#fff" } },
+  night: { water: "#12213a", land: "#2b3b55", land2: "#202d44", coast: "rgba(255,255,255,.14)", state: "rgba(255,255,255,.14)", halo: "rgba(8,16,32,.9)", label: "#fff", labelHalo: "rgba(8,16,32,.9)", dotFill: "#12213a", dotStroke: "#fff",
+    glow: true, stars: true, americana: true, contrail: "rgba(255,255,255,.5)", plane: "#fff",
+    vars: { wall: "radial-gradient(ellipse at 50% 0%, #26396a, #0b1226 70%)", title: "#ffffff", hl: "#e8a33a", hlInk: "#0b1226", tape1: "rgba(232,163,58,.55)", tape2: "rgba(255,255,255,.28)", pp: "#e6e8ef", rc: "#fbf8f1", card: "#1a2539", legendInk: "#ffffff", eyeBg: "#e8a33a", eyeInk: "#0b1226" } },
+  golden: { ...MAPLIGHT, water: "#d3e3e8", land: "#fbf3e7", land2: "#efe3d1", coast: "#d9c8b0", state: "#e6d8c2", americana: true, contrail: "rgba(255,248,238,.6)", plane: "#fff8ee",
+    vars: { wall: "linear-gradient(170deg, #f6c08f 0%, #ea8d6b 45%, #8f4a6a 100%)", title: "#fff8ee", hl: "#fff8ee", hlInk: "#7a3350", tape1: "rgba(255,248,238,.6)", tape2: "rgba(255,214,170,.7)", pp: "#f7ede4", rc: "#fffaf3", card: "#fffaf3" } },
+  minimal: { ...MAPLIGHT, water: "#e6ebef", land: "#ffffff", land2: "#f2f2ef", coast: "#d3d3ce", state: "#e3e3de", contrail: "rgba(29,29,31,.22)", plane: "#1d1d1f", noTape: true, flat: true,
+    h1: "font-family:'Inter Tight';font-weight:800;font-size:84px;letter-spacing:-.02em;transform:none",
+    vars: { wall: "#f6f4ef", title: "#1d1d1f", hl: "#1d1d1f", hlInk: "#f6f4ef", tape1: "transparent", tape2: "transparent", pp: "#ffffff", rc: "#ffffff", eyeBg: "#1d1d1f", eyeInk: "#f6f4ef" } },
+};
+const T = THEMES[(S && S.style) || "americana"] || THEMES.americana;
+{ const pg = document.getElementById("pg").style; Object.entries(T.vars).forEach(([k, v]) => pg.setProperty("--" + k, v)); }
+{ const css = document.createElement("style");
+  css.textContent = (T.h1 ? `h1 { ${T.h1} } h1 span { font-family: inherit; font-size: .7em; transform: none; margin-left: 0; }` : "")
+    + (T.noTape ? ".tape, .pin { display: none; }" : "")
+    + (T.flat ? ".mapcard, .passport, .receipt { transform: none !important; box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.06) !important; } .passport { border: 1px solid #e3e3de; }" : "");
+  document.head.appendChild(css); }
+if (T.stars) document.getElementById("pg").insertAdjacentHTML("afterbegin", `<div style="position:absolute;inset:0">${Array.from({ length: 70 }, (_, i) => { const x = (i * 197 + 53) % 1080, y = (i * 331 + 97) % 1920, r = 1 + (i * 7) % 3; return `<i style="position:absolute;left:${x}px;top:${y}px;width:${r}px;height:${r}px;border-radius:50%;background:#fff;opacity:${.25 + (i % 5) * .12}"></i>`; }).join("")}</div>`);
 const YEAR = LOG.year, AP = LOG.airports;
 const DEFAULT_COLORS = ["#E3132C", "#0B2A7A", "#F5A800", "#1FA0C0", "#2E8B57", "#0078D2", "#7a4bb3", "#c2410c", "#0f766e", "#be185d"];
 const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
@@ -137,8 +162,8 @@ document.getElementById("legend").innerHTML = counts.slice(0, 6).map(([a, n]) =>
 
 /* ---------- contrail across the page ---------- */
 document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none" viewBox="0 0 1080 1920">
-  <path d="M1100 120 C 860 150, 700 260, 640 300 S 120 520, 30 980 S 520 1960, 1120 1880" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
-  <g transform="translate(1010 128) rotate(172) scale(2.2)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="#fff"/></g></svg>`);
+  <path d="M1100 120 C 860 150, 700 260, 640 300 S 120 520, 30 980 S 520 1960, 1120 1880" fill="none" stroke="${T.contrail}" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
+  <g transform="translate(1010 128) rotate(172) scale(2.2)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="${T.plane}"/></g></svg>`);
 
 /* ---------- season-pass ticket ---------- */
 (function () {
@@ -180,18 +205,19 @@ document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="posi
     return `<div style="position:absolute;top:${top}px;left:${left}px;width:126px;transform:rotate(${rot}deg);z-index:9">${patch("p" + k, fill, ink, city, `${c} · ${n} VISIT${n === 1 ? "" : "S"}`, icon)}</div>`;
   }).join("");
   const screws = `<circle cx="30" cy="22" r="5" fill="#b9b2a0"/><circle cx="250" cy="22" r="5" fill="#b9b2a0"/>`;
-  document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  const plate = !T.americana ? "" : `
     <div style="position:absolute;top:26px;right:34px;width:280px;transform:rotate(4deg);z-index:9;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3))">
       <svg viewBox="0 0 280 130" style="width:100%"><rect x="2" y="2" width="276" height="126" rx="14" fill="${CREAM}" stroke="${NAVY}" stroke-width="4"/>
         <rect x="10" y="10" width="260" height="110" rx="9" fill="none" stroke="${NAVY}" stroke-width="1.5" opacity=".5"/>${screws}
         <text x="140" y="34" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="26" fill="${RED}">${HUB || "Frequent Flyer"}</text>
         <text x="140" y="96" text-anchor="middle" font-family="Bebas Neue" font-size="68" letter-spacing="6" fill="${NAVY}">FLY·${YEAR}</text>
-        <text x="140" y="117" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="11" letter-spacing="4" fill="${NAVY}">SEASON ${YEAR} · ${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</text></svg></div>
+        <text x="140" y="117" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="11" letter-spacing="4" fill="${NAVY}">SEASON ${YEAR} · ${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</text></svg></div>`;
+  document.getElementById("pg").insertAdjacentHTML("beforeend", `${plate}
     <div style="position:absolute;top:648px;left:62px;width:106px;transform:rotate(-6deg);z-index:9;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
       <svg viewBox="0 0 120 130" style="width:100%"><path d="M8 14 Q60 -4 112 14 Q116 70 60 126 Q4 70 8 14 Z" fill="#fff"/><path d="M14 18 Q60 3 106 18 L105 38 H15 Z" fill="${RED}"/><path d="M15 42 H105 Q104 82 60 118 Q16 82 15 42 Z" fill="${NAVY}"/>
         <text x="60" y="33" text-anchor="middle" font-family="Anton" font-size="13" letter-spacing="1.5" fill="#fff">FLIGHTS</text>
         <text x="60" y="92" text-anchor="middle" font-family="Anton" font-size="${fl.length > 99 ? 34 : 46}" fill="#fff">${fl.length}</text></svg></div>
-    ${patches}`);
+    ${T.americana ? patches : ""}`);
 })();
 
 if (!fl.length) document.getElementById("pg").insertAdjacentHTML("beforeend", `<div class="empty">Add your flights<br>to make your Story ✈</div>`);
@@ -212,10 +238,10 @@ window.ready = document.fonts.ready.then(() => {
   const underTicket = () => ll.some(p => { const [x, y] = proj(p); return x > 600 && y < 230; });
   for (const ext of [[[14, 14], [W - 14, H - 14]], [[14, 210], [W - 14, H - 14]], [[14, 60], [W - 380, H - 14]]]) { proj.fitExtent(ext, box); if (!underTicket()) break; }
   const path = d3.geoPath(proj);
-  svg.append("rect").attr("width", W).attr("height", H).attr("fill", "#cad7e4");
+  svg.append("rect").attr("width", W).attr("height", H).attr("fill", T.water);
   svg.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path")
-    .attr("d", path).attr("fill", d => d.id === "840" ? "#f4f2ea" : "#e9e6db").attr("stroke", "#c9c4b4").attr("stroke-width", 1);
-  svg.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (a, b) => a !== b))).attr("fill", "none").attr("stroke", "#d8d2c0").attr("stroke-width", 1.3);
+    .attr("d", path).attr("fill", d => d.id === "840" ? T.land : T.land2).attr("stroke", T.coast).attr("stroke-width", 1);
+  svg.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (a, b) => a !== b))).attr("fill", "none").attr("stroke", T.state).attr("stroke-width", 1.3);
   const pt = c => proj([AP[c].lon, AP[c].lat]);
   const RK = {}; fl.forEach(f => RK[f.key] = (RK[f.key] || 0) + 1);
   Object.keys(RK).sort((x, y) => RK[y] - RK[x]).forEach((key, n) => {
@@ -227,8 +253,8 @@ window.ready = document.fonts.ready.then(() => {
     rf.forEach((f, i) => {
       const kk = rf.length > 1 ? .2 * (.45 + 1.1 * i / (rf.length - 1)) : .2;
       const d = `M${A} Q${(A[0] + B[0]) / 2 + nx * kk * len},${(A[1] + B[1]) / 2 + ny * kk * len} ${B}`;
-      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 8).attr("stroke-linecap", "round");
-      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", LINE[f.air]).attr("stroke-width", 4.5).attr("stroke-linecap", "round");
+      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", T.halo).attr("stroke-width", 8).attr("stroke-linecap", "round");
+      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", LINE[f.air]).attr("stroke-width", 4.5).attr("stroke-linecap", "round").style("filter", T.glow ? "drop-shadow(0 0 3px rgba(255,255,255,.55)) drop-shadow(0 0 8px rgba(255,255,255,.25))" : null);
     });
   });
   // labels: to the right unless near the right edge; a close neighbour to the east pushes this one to the left
@@ -240,8 +266,8 @@ window.ready = document.fonts.ready.then(() => {
   });
   const busy = P.length > 5; // many airports: codes only, so labels don't pile up
   P.forEach(({ c, p: [x, y], left, dy }) => {
-    svg.append("circle").attr("cx", x).attr("cy", y).attr("r", 10).attr("fill", "#fff").attr("stroke", "#262a33").attr("stroke-width", 4);
-    const ox = left ? -16 : 16, t = svg.append("text").attr("x", x + ox).attr("y", y + dy).attr("text-anchor", left ? "end" : "start").attr("fill", "#262a33").attr("paint-order", "stroke").attr("stroke", "rgba(255,255,255,.85)").attr("stroke-width", 5);
+    svg.append("circle").attr("cx", x).attr("cy", y).attr("r", 10).attr("fill", T.dotFill).attr("stroke", T.dotStroke).attr("stroke-width", 4);
+    const ox = left ? -16 : 16, t = svg.append("text").attr("x", x + ox).attr("y", y + dy).attr("text-anchor", left ? "end" : "start").attr("fill", T.label).attr("paint-order", "stroke").attr("stroke", T.labelHalo).attr("stroke-width", 5);
     t.append("tspan").attr("font-family", "Caveat").attr("font-weight", 700).attr("font-size", busy ? 38 : 48).text(c);
     if (!busy) t.append("tspan").attr("x", x + ox).attr("dy", 26).attr("font-family", "Caveat").attr("font-size", 26).text(AP[c].city.replace(/\s*\(.*\)/, ""));
   });

@@ -52,6 +52,15 @@ input[type=date], input[type=time] { min-height: 46px; }
 .fl .meta { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fl .act { display: flex; gap: 12px; }
 .empty { color: var(--muted); font-size: 14px; border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; }
+.styles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 560px) { .styles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sty { display: grid; gap: 6px; padding: 0; border: 0; background: none; cursor: pointer; font: 600 13px var(--body); color: var(--ink); text-align: center; }
+.sty .sw { position: relative; aspect-ratio: 9 / 16; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1.5px var(--line); transition: transform .15s, box-shadow .15s; }
+.sty .sw i { position: absolute; display: block; border-radius: 3px; }
+.sty:hover .sw { transform: translateY(-2px); }
+.sty[aria-checked="true"] .sw { box-shadow: 0 0 0 3px var(--amber); }
+.sty[aria-checked="true"] span { color: var(--amber-ink); }
+.sty:focus-visible { outline: none; } .sty:focus-visible .sw { box-shadow: 0 0 0 3px var(--ink); }
 .preview { position: sticky; top: 16px; display: grid; gap: 12px; }
 .tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; justify-self: start; }
 .tab { font: 600 14px var(--body); border: 0; background: none; color: var(--muted); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
@@ -108,7 +117,12 @@ input[type=date], input[type=time] { min-height: 46px; }
     </section>
 
     <section class="step">
-      <h2><span class="n">4</span>Get your Story and your log</h2>
+      <h2><span class="n">4</span>Choose a style</h2>
+      <div class="styles" id="styles" role="radiogroup" aria-label="Story style"></div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">5</span>Get your Story and your log</h2>
       <div class="row" style="margin-top:0">
         <button class="btn" id="download" type="button">Download my Story ⬇</button>
         <a class="btn ghost" id="open" href="view.html" style="text-decoration:none">Open my flight log →</a>
@@ -140,7 +154,15 @@ const SAMPLE = { year: 2026, name: "Ting-yun Wu", flights: [
   ["2026-12-01","SEA","SJC","Delta","DL 3736","08:30","10:53"],["2026-12-19","SJC","SEA","Southwest","WN 3914","21:45","00:05"],
 ].map(([d, from, to, air, no, dep, arr]) => ({ d, from, to, air, no, dep, arr })) };
 
-let S = { year: new Date().getFullYear(), name: "", flights: [] }, editing = -1;
+let S = { year: new Date().getFullYear(), name: "", style: "americana", flights: [] }, editing = -1;
+// the five Story looks: name, page background, card color, accent (drawn as mini thumbnails)
+const STYLES = [
+  ["americana", "Americana", "repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 2px, transparent 2px 6px), #5d7896", "#ffffff", "#9e2a2b"],
+  ["scrapbook", "Scrapbook", "radial-gradient(rgba(0,0,0,.08) 1px, transparent 1.5px) 0 0/6px 6px, #eceef1", "#ffffff", "#ffd36b"],
+  ["night", "Night flight", "radial-gradient(ellipse at 50% 0%, #26396a, #0b1226 70%)", "#1a2539", "#e8a33a"],
+  ["golden", "Golden hour", "linear-gradient(170deg, #f6c08f 0%, #ea8d6b 45%, #8f4a6a 100%)", "#fffaf3", "#fff8ee"],
+  ["minimal", "Minimal", "#f6f4ef", "#ffffff", "#1d1d1f"],
+];
 // restore from a shared link or the last visit
 try { const h = /[#&]a=([^&]+)/.exec(location.hash); const saved = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); if (saved && Array.isArray(saved.flights)) S = { ...S, ...saved }; } catch (e) {}
 
@@ -158,6 +180,16 @@ $("name").value = S.name;
 $("name").addEventListener("input", e => { S.name = e.target.value; update(); });
 const setDateRange = () => { $("fDate").min = `${S.year}-01-01`; $("fDate").max = `${S.year}-12-31`; };
 setDateRange();
+
+/* ---------- style ---------- */
+function drawStyles() {
+  $("styles").innerHTML = STYLES.map(([id, name, wall, card, acc]) => `<button class="sty" type="button" role="radio" aria-checked="${(S.style || "americana") === id}" data-style="${id}">
+    <span class="sw" style="background:${wall}"><i style="left:10%;top:6%;width:46%;height:6%;background:${acc}"></i><i style="left:8%;top:17%;width:84%;height:30%;background:${card};box-shadow:0 2px 4px rgba(0,0,0,.15)"></i>
+      <i style="left:6%;top:52%;width:50%;height:42%;background:${id === "night" ? "#e6e8ef" : "#e9eef0"};box-shadow:0 2px 4px rgba(0,0,0,.15)"></i><i style="left:60%;top:54%;width:34%;height:40%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.15)"></i></span>
+    <span>${name}</span></button>`).join("");
+}
+$("styles").addEventListener("click", e => { const b = e.target.closest("[data-style]"); if (!b) return; S.style = b.dataset.style; drawStyles(); tab(false); update(); });
+drawStyles();
 
 /* ---------- flights ---------- */
 function readForm() {
@@ -197,8 +229,8 @@ $("list").addEventListener("click", e => {
     $("add").textContent = "Save flight"; $("cancel").hidden = false; drawList(); $("fDate").focus(); }
   if (del != null) { S.flights.splice(+del, 1); if (editing === +del) clearForm(); drawList(); update(); }
 });
-$("sample").onclick = () => { S = JSON.parse(JSON.stringify(SAMPLE)); $("year").value = S.year; $("name").value = S.name; setDateRange(); clearForm(); drawList(); update(); };
-$("clear").onclick = () => { if (S.flights.length && !confirm("Remove all your flights and start over?")) return; S = { year: new Date().getFullYear(), name: "", flights: [] }; $("year").value = S.year; $("name").value = ""; setDateRange(); clearForm(); drawList(); update(); };
+$("sample").onclick = () => { S = { ...JSON.parse(JSON.stringify(SAMPLE)), style: S.style }; $("year").value = S.year; $("name").value = S.name; setDateRange(); clearForm(); drawList(); update(); };
+$("clear").onclick = () => { if (S.flights.length && !confirm("Remove all your flights and start over?")) return; S = { year: new Date().getFullYear(), name: "", style: S.style, flights: [] }; $("year").value = S.year; $("name").value = ""; setDateRange(); clearForm(); drawList(); update(); };
 
 /* ---------- live preview ---------- */
 let timer = 0, lastLog = "";
