@@ -2,51 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>2026 in the Air</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=IBM+Plex+Sans:wght@500;600&display=swap">
-<style>
-/* One link, two views: the interactive flight log and the animated story, switched by a toggle in the top bar. */
-:root { --bar: #1d2b4a; --ink: #fff; --muted: rgba(255,255,255,.65); --amber: #e8a33a; --bg: #0e1524; }
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; background: var(--bg); font-family: "IBM Plex Sans", system-ui, sans-serif; }
-.bar { position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 16px 0; background: var(--bar); color: var(--ink); display: flex; align-items: center; gap: 14px; }
-.bar b { font: 800 24px/1 "Big Shoulders Display", Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; }
-.bar b span { color: var(--amber); }
-.seg { display: inline-flex; margin-left: auto; background: rgba(255,255,255,.1); border-radius: 999px; padding: 4px; }
-.seg button { font: 600 14px "IBM Plex Sans", sans-serif; color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; white-space: nowrap; }
-.seg button[aria-selected="true"] { background: var(--amber); color: var(--bar); }
-.seg button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.next { color: var(--muted); font-size: 13px; text-decoration: none; white-space: nowrap; }
-.next:hover { color: #fff; }
-iframe { position: fixed; left: 0; right: 0; bottom: 0; top: calc(56px + env(safe-area-inset-top, 0px)); width: 100%; height: calc(100% - 56px - env(safe-area-inset-top, 0px)); border: 0; background: var(--bg); }
-iframe[hidden] { display: none; }
-@media (max-width: 520px) { .bar b { font-size: 20px; } .next { display: none; } .seg button { padding: 8px 12px; font-size: 13px; } }
-</style>
+<meta http-equiv="refresh" content="0; url=./">
+<script>location.replace("./" + (location.hash === "#story" ? "#story" : ""));</script>
 </head>
-<body>
-<div class="bar">
-  <b>2026 <span>in the air</span></b>
-  <div class="seg" role="tablist" aria-label="Choose a view">
-    <button id="t-log" role="tab" aria-selected="true" aria-controls="v-log">Flight log</button>
-    <button id="t-story" role="tab" aria-selected="false" aria-controls="v-story">▶ Story</button>
-  </div>
-  <a class="next" href="2027/">2027 →</a>
-</div>
-<iframe id="v-log" src="index.html" title="2026 flight log"></iframe>
-<iframe id="v-story" title="2026 animated story" hidden></iframe>
-<script>
-const views = { log: [t("t-log"), t("v-log")], story: [t("t-story"), t("v-story")] };
-function t(id) { return document.getElementById(id); }
-function show(name) {
-  Object.entries(views).forEach(([k, [btn, frame]]) => { const on = k === name; btn.setAttribute("aria-selected", on); frame.hidden = !on; });
-  // load the story fresh each time so its animation starts from the beginning
-  if (name === "story") views.story[1].src = "story.html";
-  history.replaceState(null, "", name === "story" ? "#story" : location.pathname);
-}
-views.log[0].addEventListener("click", () => show("log"));
-views.story[0].addEventListener("click", () => show("story"));
-if (location.hash === "#story") show("story");
-</script>
-</body>
+<body><a href="./">2026 in the Air</a></body>
 </html>

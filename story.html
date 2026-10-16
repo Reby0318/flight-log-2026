@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>[hidden]{display:none!important}</style>
+<script>if (window.self !== window.top) document.documentElement.classList.add("embed");</script>
+<style>[hidden]{display:none!important}
+/* embedded in the flight log page: transparent page, frame fills the iframe */
+html.embed { color-scheme: normal; }
+html.embed body { background: transparent; padding: 0; }
+html.embed .frame { width: min(100vw, 100dvh * 9 / 16); box-shadow: none; }
+</style>
 <script>window.LOGO_BASE = "pictures/logos-official/";</script>
 <title>2026 Flight Stories</title>
 <script src="pictures/logos.js"></script>

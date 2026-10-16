@@ -75,7 +75,16 @@ h1 span { color: var(--upcoming-text); }
 main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
 
-.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.mapcol { display: grid; gap: 24px; min-width: 0; }
+/* the story fills the space under the map and stays in view while the flight list scrolls */
+.storycard { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.storycard iframe { display: block; width: 100%; max-width: 420px; aspect-ratio: 9 / 16; margin: 0 auto; border: 0; border-radius: 18px; background: #0a1330; }
+/* phones: map, then badges, then the story, so badge effects stay right under the map */
+@media (max-width: 860px) {
+  main > .mapcol, main > .side { display: contents; }
+  .mapcard { order: 1; } .badges { order: 2; } .storycard { order: 3; position: static; } .pilot { order: 4; } .side > .log { order: 5; }
+}
 @media (max-width: 860px) { .mapcard { position: static; } }
 svg { display: block; width: 100%; height: auto; }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
@@ -256,6 +265,7 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
   </header>
 
   <main>
+    <div class="mapcol">
     <section class="mapcard" aria-label="Route map">
       <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><button class="surprise" id="surprise" type="button">✦ Surprise me</button><span class="nowplaying" id="now">Replays all 14 flights in order</span></div>
       <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of 2026 flight routes between Seattle, San Francisco, San Jose and Dallas–Fort Worth"></svg>
@@ -265,6 +275,11 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
         <span><i class="up"></i>Dashed = upcoming</span>
       </div>
     </section>
+    <section class="storycard" id="story" aria-label="Instagram story">
+      <div class="colhead"><h2>The story</h2><span>Tap · next  hold · pause</span></div>
+      <iframe src="story.html" title="2026 Instagram story, animated" loading="lazy"></iframe>
+    </section>
+    </div>
 
     <div class="side">
       <section class="badges" aria-label="Badges">
