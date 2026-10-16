@@ -96,6 +96,42 @@
     };
   };
   // answers <-> the text after "#a=" in a shared link (UTF-8 safe base64)
-  window.flEncode = S => btoa(unescape(encodeURIComponent(JSON.stringify(S))));
-  window.flDecode = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+  // Compact form ("1" + URL-safe base64 of arrays) keeps share links short; older links (plain base64 JSON) still open.
+  const b64 = t => btoa(unescape(encodeURIComponent(t))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64 = t => decodeURIComponent(escape(atob(t.replace(/-/g, "+").replace(/_/g, "/"))));
+  window.flEncode = S => "1" + b64(JSON.stringify([+S.year || 0, S.name || "", S.style || "", (S.flights || []).map(f => [f.d, f.from, f.to, f.air || "", f.no || "", f.dep || "", f.arr || ""])]));
+  window.flDecode = s => {
+    if (s[0] !== "1") return JSON.parse(unb64(s));
+    const [year, name, style, fl] = JSON.parse(unb64(s.slice(1)));
+    return { year, name, style: style || "americana", flights: fl.map(([d, from, to, air, no, dep, arr]) => ({ d, from, to, air, no, dep, arr })) };
+  };
+
+  // Share buttons: Instagram (the picture, via the page's own download/share), Facebook, Threads, LINE and Email (a link to the log)
+  window.flShareBar = (el, info, onInstagram) => {
+    const go = kind => {
+      const { url, text, subject } = info(), u = encodeURIComponent(url), t = encodeURIComponent(text);
+      const href = {
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+        threads: `https://www.threads.net/intent/post?text=${encodeURIComponent(text + " " + url)}`,
+        line: `https://social-plugins.line.me/lineit/share?url=${u}&text=${t}`,
+        email: `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + "\n\n" + url)}`,
+      }[kind];
+      if (kind === "email") location.href = href; else window.open(href, "_blank", "noopener,width=640,height=640");
+    };
+    el.innerHTML = [["instagram", "Instagram"], ["facebook", "Facebook"], ["threads", "Threads"], ["line", "LINE"], ["email", "Email"]]
+      .map(([k, n]) => `<button type="button" class="sh sh-${k}" data-sh="${k}">${n}</button>`).join("")
+      + (navigator.share ? `<button type="button" class="sh sh-more" data-sh="more">More…</button>` : "");
+    el.addEventListener("click", async e => {
+      const b = e.target.closest("[data-sh]"); if (!b) return;
+      const k = b.dataset.sh;
+      if (k === "instagram") onInstagram();
+      else if (k === "more") { const { url, text, subject } = info(); try { await navigator.share({ title: subject, text, url }); } catch (err) {} }
+      else go(k);
+    });
+  };
+  window.FL_SHARE_CSS = `.share{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.share .sh{font:600 13px var(--body,system-ui);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;color:#fff}
+.sh-instagram{background:linear-gradient(45deg,#f9a03f,#e1306c 45%,#833ab4)}.sh-facebook{background:#1877f2}.sh-threads{background:#101010}
+.sh-line{background:#06c755}.sh-email{background:#5d6b82}.sh-more{background:none;color:inherit!important;box-shadow:inset 0 0 0 1.5px currentColor}
+.share .sh:focus-visible{outline:2px solid #e8a33a;outline-offset:2px}`;
 })();

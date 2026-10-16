@@ -150,7 +150,7 @@ body { background: var(--page); color: var(--ink); font-family: var(--body); dis
 <script>
 /* ---------- the visitor's flights: from the maker (#a=...) or what they last entered ---------- */
 let ANS = null;
-try { const h = /[#&]a=([^&]+)/.exec(location.hash); ANS = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
+try { const h = /[?#&]a=([^&#]+)/.exec(location.search + location.hash); ANS = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
 const LOG = buildFlightLog(ANS || { year: new Date().getFullYear(), flights: [] });
 const YEAR = LOG.year, AP = LOG.airports;
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];

@@ -149,6 +149,8 @@ input[type=date], input[type=time] { min-height: 46px; }
         <button class="btn ghost" id="share" type="button">Copy link to my log</button>
       </div>
       <div class="msg ok" id="status" role="status"></div>
+      <p class="or" style="margin:10px 0 8px">Share with friends</p>
+      <div class="share" id="shareBar"></div>
       <p class="note">Your flights are saved only in this browser. The copied link carries them inside the link itself, so anyone with it can see them; it never includes booking codes or prices.</p>
     </section>
   </main>
@@ -184,7 +186,7 @@ const STYLES = [
   ["minimal", "Minimal", "#f6f4ef", "#ffffff", "#1d1d1f"],
 ];
 // restore from a shared link or the last visit
-try { const h = /[#&]a=([^&]+)/.exec(location.hash); const saved = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); if (saved && Array.isArray(saved.flights)) S = { ...S, ...saved }; } catch (e) {}
+try { const h = /[?#&]a=([^&#]+)/.exec(location.search + location.hash); const saved = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); if (saved && Array.isArray(saved.flights)) S = { ...S, ...saved }; } catch (e) {}
 
 $("airports").innerHTML = Object.entries(FL_AIRPORTS).map(([c, a]) => `<option value="${c}">${c} · ${a[0]}</option>`).join("");
 $("airlines").innerHTML = Object.keys(FL_AIRLINES).sort().map(n => `<option value="${n}"></option>`).join("");
@@ -312,12 +314,25 @@ $("aiImport").onclick = () => {
   msg.className = fresh.length ? "msg ok" : "msg"; msg.textContent = notes.join(" · ") + ".";
   if (fresh.length) { $("aiPaste").value = ""; drawList(); update(); }
 };
+
+/* ---------- share with friends ---------- */
+{ const st = document.createElement("style"); st.textContent = FL_SHARE_CSS; document.head.appendChild(st); }
+const shareInfo = A => {
+  const n = (A.flights || []).length, first = (A.name || "").trim().split(/\s+/)[0];
+  return { url: new URL("view.html", location.href).href + "?a=" + flEncode(A),
+    subject: `${first ? first + "'s" : "My"} ${A.year} flight log`,
+    text: `${first ? first + "'s" : "My"} ${A.year} in the air ✈ ${n} flight${n === 1 ? "" : "s"}. Make your own flight log too!` };
+};
+flShareBar($("shareBar"), () => shareInfo(S), () => {
+  if (!S.flights.length) { $("status").textContent = "Add at least one flight first."; return; }
+  $("download").click(); $("status").textContent = "Saving your Story picture… then post it as an Instagram Story.";
+});
 /* ---------- live preview ---------- */
 let timer = 0, lastLog = "";
 const link = page => `${page}?embed=1&r=${Date.now()}#a=${encodeURIComponent(flEncode(S))}`;
 function update() {
   try { localStorage.setItem("my-flight-log", JSON.stringify(S)); } catch (e) {}
-  $("open").href = `view.html#a=${encodeURIComponent(flEncode(S))}`;
+  $("open").href = `view.html?a=${flEncode(S)}`;
   clearTimeout(timer); timer = setTimeout(() => { $("pv").src = link("story.html"); if (!$("lv").hidden) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); } }, 350);
 }
 function fit() { const w = $("stage").clientWidth; $("pv").style.transform = `scale(${w / 1080})`; }
@@ -354,7 +369,7 @@ $("download").onclick = () => {
 
 /* ---------- share ---------- */
 $("share").onclick = async () => {
-  const url = new URL("view.html", location.href).href + "#a=" + encodeURIComponent(flEncode(S));
+  const url = shareInfo(S).url;
   try { await navigator.clipboard.writeText(url); $("status").textContent = "Link copied ✓ Anyone with it can open your flight log."; }
   catch (e) { prompt("Copy this link:", url); }
 };

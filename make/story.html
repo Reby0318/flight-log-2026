@@ -67,7 +67,7 @@ h1 span { display: inline-block; margin: 6px 0 0 110px; font: 700 .78em/1 var(--
 <script>
 // the visitor's own flights: from the maker (#a=...) or what they last entered
 let S = null;
-try { const h = /[#&]a=([^&]+)/.exec(location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
+try { const h = /[?#&]a=([^&#]+)/.exec(location.search + location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
 const LOG = buildFlightLog(S || { year: new Date().getFullYear(), flights: [] });
 
 /* ---------- five looks, picked in the maker (answers.style) ---------- */
