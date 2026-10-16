@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Make Your Flight Log</title>
+<meta name="description" content="Add your flights for any year and get an interactive flight log plus a 1080×1920 Instagram Story. No coding needed.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<script src="data.js"></script>
+<style>
+/* The maker: numbered questions on the left, a live preview (Story picture or interactive log) on the right; stacks on phones. */
+:root { --bg: #eef1f5; --surface: #fff; --ink: #1d2b4a; --muted: #5d6b82; --line: #d9dee6; --amber: #e8a33a; --amber-ink: #8a5a12; --red: #b3202a;
+  --display: "Big Shoulders Display", Impact, sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0e1524; --surface: #172139; --ink: #eef2f8; --muted: #9aa7bd; --line: #2a3756; --amber-ink: #f2c06d; } }
+:root[data-theme="dark"] { --bg: #0e1524; --surface: #172139; --ink: #eef2f8; --muted: #9aa7bd; --line: #2a3756; --amber-ink: #f2c06d; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--body); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 96px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 32px; align-items: start; }
+header { grid-column: 1 / -1; }
+.back { color: var(--muted); font-size: 14px; text-decoration: none; }
+.back:hover { color: var(--ink); }
+h1 { font: 800 56px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; margin: 10px 0 8px; }
+h1 span { color: var(--amber-ink); }
+.sub { margin: 0; color: var(--muted); max-width: 640px; }
+.steps { display: grid; gap: 16px; min-width: 0; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.step h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font: 600 19px var(--body); }
+.n { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--bg); font: 600 14px var(--mono); flex: none; }
+.opt { color: var(--muted); font-weight: 400; font-size: 15px; }
+label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); font-weight: 500; }
+input { font: inherit; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; outline: none; }
+input:focus { border-color: var(--amber); }
+input[type=date], input[type=time] { min-height: 46px; }
+.grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.c2 { grid-column: span 2; } .c3 { grid-column: span 3; } .c6 { grid-column: 1 / -1; }
+@media (max-width: 560px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .c2, .c3 { grid-column: span 1; } .c6, .wide { grid-column: 1 / -1; } }
+.btn { font: 600 15px var(--body); border: 0; border-radius: 999px; padding: 11px 20px; cursor: pointer; background: var(--ink); color: var(--bg); }
+.btn.amber { background: var(--amber); color: #1d2b4a; }
+.btn.ghost { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+.btn.big { width: 100%; padding: 14px 20px; font-size: 16px; }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn:focus-visible, .link:focus-visible, .tab:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.link { background: none; border: 0; padding: 0; color: var(--muted); font: 500 14px var(--body); text-decoration: underline; cursor: pointer; }
+.msg { min-height: 22px; font-size: 14px; color: var(--red); margin-top: 8px; }
+.msg.ok { color: var(--amber-ink); }
+.list { display: grid; gap: 8px; margin-top: 14px; }
+.fl { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.fl .dt { font: 600 12px var(--mono); color: var(--muted); text-align: center; line-height: 1.2; }
+.fl .dt b { display: block; font: 800 24px/1 var(--display); color: var(--ink); }
+.fl .rt { font: 800 22px/1 var(--display); letter-spacing: .02em; }
+.fl .meta { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fl .act { display: flex; gap: 12px; }
+.empty { color: var(--muted); font-size: 14px; border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px; text-align: center; }
+.preview { position: sticky; top: 16px; display: grid; gap: 12px; }
+.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; justify-self: start; }
+.tab { font: 600 14px var(--body); border: 0; background: none; color: var(--muted); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.stage { position: relative; width: 100%; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #5d7896; box-shadow: 0 12px 30px rgba(20,30,50,.18); }
+.stage iframe { position: absolute; top: 0; left: 0; width: 1080px; height: 1920px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.logframe { width: 100%; height: min(78vh, 780px); border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.mobilebar { display: none; }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); }
+  .preview { position: static; }
+  h1 { font-size: 44px; }
+  .mobilebar { display: block; position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); z-index: 5; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="../">← See an example: Ting-yun's 2026</a>
+    <h1>Make your <span>flight log</span></h1>
+    <p class="sub">Add the flights you took (or booked) in any year. You get an interactive flight log with a map, badges and stamps, plus a ready-to-post Instagram Story (1080 × 1920). Everything stays in your browser.</p>
+  </header>
+
+  <main class="steps">
+    <section class="step">
+      <h2><span class="n">1</span>Which year?</h2>
+      <input type="text" id="year" inputmode="numeric" maxlength="4" placeholder="e.g. 2026" aria-label="Year" style="max-width:180px">
+    </section>
+
+    <section class="step">
+      <h2><span class="n">2</span>Your name <span class="opt">(optional)</span></h2>
+      <input type="text" id="name" maxlength="30" placeholder="First and last name" aria-label="Your name" style="max-width:360px">
+    </section>
+
+    <section class="step">
+      <h2><span class="n">3</span>Add your flights</h2>
+      <div class="grid">
+        <label class="c2 wide">Date<input type="date" id="fDate"></label>
+        <label class="c2">From<input type="text" id="fFrom" list="airports" placeholder="SEA" autocomplete="off" maxlength="40"></label>
+        <label class="c2">To<input type="text" id="fTo" list="airports" placeholder="SFO" autocomplete="off" maxlength="40"></label>
+        <label class="c3">Airline<input type="text" id="fAir" list="airlines" placeholder="Delta" autocomplete="off" maxlength="30"></label>
+        <label class="c3">Flight number<input type="text" id="fNo" placeholder="e.g. DL 3736" maxlength="10"></label>
+        <label class="c3">Departs<input type="time" id="fDep" aria-describedby="timesHint"></label>
+        <label class="c3">Lands<input type="time" id="fArr" aria-describedby="timesHint"></label>
+      </div>
+      <p class="note" id="timesHint" style="margin-top:8px">Times are optional, in local time. A landing time earlier than departure means you landed the next day.</p>
+      <div class="row"><button class="btn amber" id="add" type="button">Add flight</button><button class="link" id="cancel" type="button" hidden>Cancel editing</button></div>
+      <div class="msg" id="msg" role="status"></div>
+      <div class="list" id="list"></div>
+      <div class="row"><button class="link" id="sample" type="button">Try it with sample flights</button><button class="link" id="clear" type="button">Start over</button></div>
+      <datalist id="airports"></datalist><datalist id="airlines"></datalist>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">4</span>Get your Story and your log</h2>
+      <div class="row" style="margin-top:0">
+        <button class="btn" id="download" type="button">Download my Story ⬇</button>
+        <a class="btn ghost" id="open" href="view.html" target="_blank" rel="noopener" style="text-decoration:none">Open my flight log ↗</a>
+        <button class="btn ghost" id="share" type="button">Copy link to my log</button>
+      </div>
+      <div class="msg ok" id="status" role="status"></div>
+      <p class="note">Your flights are saved only in this browser. The copied link carries them inside the link itself, so anyone with it can see them; it never includes booking codes or prices.</p>
+    </section>
+  </main>
+
+  <aside class="preview" id="preview" aria-label="Preview">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tStory" aria-selected="true">Story picture</button>
+      <button class="tab" role="tab" id="tLog" aria-selected="false">Interactive log</button>
+    </div>
+    <div class="stage" id="stage"><iframe id="pv" title="Story preview" tabindex="-1"></iframe></div>
+    <iframe class="logframe" id="lv" title="Interactive flight log preview" hidden></iframe>
+  </aside>
+</div>
+<div class="mobilebar"><button class="btn big amber" id="toPreview" type="button">See preview &amp; download ↓</button></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SAMPLE = { year: 2026, name: "Ting-yun Wu", flights: [
+  ["2026-01-02","SEA","SJC","Southwest","WN 4693","",""],["2026-06-12","SFO","SEA","United","UA 5579","22:59","01:29"],["2026-06-23","SEA","SJC","Alaska","AS 319","15:42","17:53"],
+  ["2026-06-30","SFO","SEA","United","UA 1389","22:59","01:13"],["2026-07-07","SEA","SJC","Delta","DL 3736","08:25","10:50"],["2026-08-14","SFO","DFW","Frontier","F9 2376","00:54","06:30"],
+  ["2026-08-17","DFW","SFO","American","AA 1949","07:10","08:50"],["2026-09-05","SJC","SEA","Delta","","20:53","23:19"],["2026-09-10","SEA","SJC","Delta","","08:25","10:52"],
+  ["2026-11-14","SFO","SEA","Alaska","AS 591","18:48","21:03"],["2026-11-16","SEA","SFO","United","UA 499","07:00","09:19"],["2026-11-23","SJC","SEA","Southwest","WN 2150","06:00","08:30"],
+  ["2026-12-01","SEA","SJC","Delta","DL 3736","08:30","10:53"],["2026-12-19","SJC","SEA","Southwest","WN 3914","21:45","00:05"],
+].map(([d, from, to, air, no, dep, arr]) => ({ d, from, to, air, no, dep, arr })) };
+
+let S = { year: new Date().getFullYear(), name: "", flights: [] }, editing = -1;
+// restore from a shared link or the last visit
+try { const h = /[#&]a=([^&]+)/.exec(location.hash); const saved = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); if (saved && Array.isArray(saved.flights)) S = { ...S, ...saved }; } catch (e) {}
+
+$("airports").innerHTML = Object.entries(FL_AIRPORTS).map(([c, a]) => `<option value="${c}">${c} · ${a[0]}</option>`).join("");
+$("airlines").innerHTML = Object.keys(FL_AIRLINES).sort().map(n => `<option value="${n}"></option>`).join("");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const code = v => { const m = /^\s*([A-Za-z]{3})\b/.exec(v || ""); return m ? m[1].toUpperCase() : ""; };
+const t12 = s => { if (!s) return ""; const [h, m] = s.split(":").map(Number); return `${(h % 12) || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ---------- year and name ---------- */
+$("year").value = S.year;
+$("year").addEventListener("input", e => { const v = e.target.value.replace(/\D/g, ""); e.target.value = v; if (v.length === 4) { S.year = +v; setDateRange(); update(); } });
+$("name").value = S.name;
+$("name").addEventListener("input", e => { S.name = e.target.value; update(); });
+const setDateRange = () => { $("fDate").min = `${S.year}-01-01`; $("fDate").max = `${S.year}-12-31`; };
+setDateRange();
+
+/* ---------- flights ---------- */
+function readForm() {
+  const f = { d: $("fDate").value, from: code($("fFrom").value), to: code($("fTo").value), air: $("fAir").value.trim().replace(/\s+/g, " "), no: $("fNo").value.trim().toUpperCase(), dep: $("fDep").value, arr: $("fArr").value };
+  const known = Object.keys(FL_AIRLINES).find(n => n.toLowerCase() === f.air.toLowerCase()); if (known) f.air = known;
+  if (!f.d) return "Pick the date of the flight.";
+  if (+f.d.slice(0, 4) !== +S.year) return `That date isn't in ${S.year}. Change the year in step 1, or pick a ${S.year} date.`;
+  if (!FL_AIRPORTS[f.from]) return f.from ? `We don't know the airport "${f.from}" yet. Try a nearby major airport.` : "Enter the airport you flew from (e.g. SEA).";
+  if (!FL_AIRPORTS[f.to]) return f.to ? `We don't know the airport "${f.to}" yet. Try a nearby major airport.` : "Enter the airport you flew to (e.g. SFO).";
+  if (f.from === f.to) return "From and To are the same airport.";
+  if (!f.air) return "Enter the airline (e.g. Delta).";
+  if (f.arr && !f.dep) return "Add the departure time too, or leave both times empty.";
+  return f;
+}
+function clearForm() { ["fFrom", "fTo", "fAir", "fNo", "fDep", "fArr"].forEach(id => $(id).value = ""); editing = -1; $("add").textContent = "Add flight"; $("cancel").hidden = true; }
+$("add").onclick = () => {
+  const f = readForm(); if (typeof f === "string") { $("msg").textContent = f; return; }
+  if (editing >= 0) S.flights[editing] = f; else S.flights.push(f);
+  S.flights.sort((a, b) => (a.d + a.dep).localeCompare(b.d + b.dep));
+  $("msg").textContent = ""; clearForm(); drawList(); update(); $("fFrom").focus();
+};
+$("cancel").onclick = () => { clearForm(); $("msg").textContent = ""; drawList(); };
+["fFrom", "fTo", "fAir", "fNo", "fDep", "fArr"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("add").click(); } }));
+function drawList() {
+  if (!S.flights.length) { $("list").innerHTML = `<div class="empty">No flights yet. Add your first one above.</div>`; return; }
+  $("list").innerHTML = S.flights.map((f, i) => {
+    const [, m, d] = f.d.split("-").map(Number);
+    const times = f.dep ? ` · ${t12(f.dep)}${f.arr ? " → " + t12(f.arr) : ""}` : "";
+    return `<div class="fl"${i === editing ? ' style="border-color:var(--amber)"' : ""}><div class="dt">${MON[m - 1].toUpperCase()}<b>${d}</b></div>
+      <div style="min-width:0"><div class="rt">${f.from} → ${f.to}</div><div class="meta">${esc(f.air)}${f.no ? " · " + esc(f.no) : ""}${times}</div></div>
+      <div class="act"><button class="link" type="button" data-edit="${i}">Edit</button><button class="link" type="button" data-del="${i}" aria-label="Remove ${f.from} to ${f.to}">Remove</button></div></div>`;
+  }).join("");
+}
+$("list").addEventListener("click", e => {
+  const ed = e.target.dataset.edit, del = e.target.dataset.del;
+  if (ed != null) { const f = S.flights[+ed]; editing = +ed; $("fDate").value = f.d; $("fFrom").value = f.from; $("fTo").value = f.to; $("fAir").value = f.air; $("fNo").value = f.no || ""; $("fDep").value = f.dep || ""; $("fArr").value = f.arr || "";
+    $("add").textContent = "Save flight"; $("cancel").hidden = false; drawList(); $("fDate").focus(); }
+  if (del != null) { S.flights.splice(+del, 1); if (editing === +del) clearForm(); drawList(); update(); }
+});
+$("sample").onclick = () => { S = JSON.parse(JSON.stringify(SAMPLE)); $("year").value = S.year; $("name").value = S.name; setDateRange(); clearForm(); drawList(); update(); };
+$("clear").onclick = () => { if (S.flights.length && !confirm("Remove all your flights and start over?")) return; S = { year: new Date().getFullYear(), name: "", flights: [] }; $("year").value = S.year; $("name").value = ""; setDateRange(); clearForm(); drawList(); update(); };
+
+/* ---------- live preview ---------- */
+let timer = 0, lastLog = "";
+const link = page => `${page}?r=${Date.now()}#a=${encodeURIComponent(flEncode(S))}`;
+function update() {
+  try { localStorage.setItem("my-flight-log", JSON.stringify(S)); } catch (e) {}
+  $("open").href = `view.html#a=${encodeURIComponent(flEncode(S))}`;
+  clearTimeout(timer); timer = setTimeout(() => { $("pv").src = link("story.html"); if (!$("lv").hidden) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); } }, 350);
+}
+function fit() { const w = $("stage").clientWidth; $("pv").style.transform = `scale(${w / 1080})`; }
+new ResizeObserver(fit).observe($("stage"));
+function tab(log) {
+  $("tStory").setAttribute("aria-selected", !log); $("tLog").setAttribute("aria-selected", log);
+  $("stage").hidden = log; $("lv").hidden = !log;
+  if (log && lastLog !== JSON.stringify(S)) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); }
+}
+$("tStory").onclick = () => tab(false); $("tLog").onclick = () => tab(true);
+$("toPreview").onclick = () => $("preview").scrollIntoView({ behavior: "smooth", block: "start" });
+
+/* ---------- download the Story picture ---------- */
+let reqId = 0;
+$("download").onclick = () => {
+  if (!S.flights.length) { $("status").textContent = "Add at least one flight first."; return; }
+  const btn = $("download"), id = ++reqId; btn.disabled = true; btn.textContent = "Creating your PNG…"; $("status").textContent = "";
+  const done = msg => { btn.disabled = false; btn.textContent = "Download my Story ⬇"; $("status").textContent = msg || ""; window.removeEventListener("message", onMsg); };
+  const onMsg = async e => {
+    if (!e.data || e.data.type !== "png" || e.data.id !== id) return;
+    if (e.data.error) { done("Sorry, the picture couldn't be created in this browser. Try Chrome or Safari."); return; }
+    const blob = await (await fetch(e.data.url)).blob(), file = new File([blob], `my-${S.year}-flights-story.png`, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
+      try { await navigator.share({ files: [file], title: `My ${S.year} flights` }); done("Saved! Share it to your Instagram Story."); return; } catch (err) {}
+    }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+    done("Downloaded ✓ 1080 × 1920 PNG, ready for your Instagram Story");
+  };
+  window.addEventListener("message", onMsg);
+  tab(false);
+  $("pv").contentWindow.postMessage({ type: "export", id }, "*");
+};
+
+/* ---------- share ---------- */
+$("share").onclick = async () => {
+  const url = new URL("view.html", location.href).href + "#a=" + encodeURIComponent(flEncode(S));
+  try { await navigator.clipboard.writeText(url); $("status").textContent = "Link copied ✓ Anyone with it can open your flight log."; }
+  catch (e) { prompt("Copy this link:", url); }
+};
+
+drawList(); update();
+</script>
+</body>
+</html>

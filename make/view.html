@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}</style>
+<title>My Flight Log</title>
+<script src="data.js"></script>
+<script>
+// the visitor's own flights: from a shared link (#a=...) or what they last entered in the maker
+(function () {
+  let S = null;
+  try { const h = /[#&]a=([^&]+)/.exec(location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
+  window.FLIGHT_LOG = buildFlightLog(S || { year: new Date().getFullYear(), flights: [] });
+})();
+</script>
+<script>window.LOGO_BASE = window.LOGO_BASE || "../pictures/logos-official/";</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="../pictures/us-states.js"></script>
+<script src="../pictures/world-countries.js"></script>
+<script src="../pictures/logos.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: departures-board header, then route map (left) beside a boarding-pass flight log (right); stacks on phones. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --land: #f4f6f9;
+  --land2: #e8ebf0;
+  --ocean: #d9e6f2;
+  --ink: #17223a;
+  --muted: #5d6a82;
+  --line: #cfd6e1;
+  --flown: #2b4c8c;
+  --upcoming: #c9761a;
+  --upcoming-text: #9a5a10;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1524; --surface: #151f33; --land: #1d2940; --land2: #151e31; --ocean: #0a1120;
+    --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
+    --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1524; --surface: #151f33; --land: #1d2940; --land2: #151e31; --ocean: #0a1120;
+  --ink: #e6ebf3; --muted: #95a2bb; --line: #2a3752;
+  --flown: #7fa3e8; --upcoming: #f2a93b; --upcoming-text: #f2b65a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 20px; display: grid; gap: 24px; }
+
+header { display: grid; gap: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 8vw, 84px); line-height: .9; margin: 4px 0 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--upcoming-text); }
+
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cell { background: var(--surface); padding: 12px 16px; display: grid; gap: 2px; min-width: 0; }
+.cell .k { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cell .v { font-family: var(--display); font-weight: 600; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.cell .s { font-size: 12px; color: var(--muted); }
+.cell.next .v { color: var(--upcoming-text); }
+
+.months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.month { display: grid; gap: 6px; justify-items: center; padding: 8px 0 6px; border-top: 2px solid var(--line); min-width: 0; }
+.month.now { border-top-color: var(--upcoming); }
+.month .m { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.month.now .m { color: var(--upcoming-text); font-weight: 500; }
+.month .dots { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--flown); }
+.dot.up { background: transparent; border: 2px solid var(--upcoming); }
+
+main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+
+.mapcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+@media (max-width: 860px) { .mapcard { position: static; } }
+svg { display: block; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 6px 2px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 4px solid var(--flown); }
+.legend i.up { border-top: 3px dashed var(--muted); }
+
+.arc { fill: none; stroke-width: 2; transition: opacity .2s, stroke-width .2s; }
+.arc { stroke-width: 4; stroke-linecap: round; }
+.arc.flown { opacity: .95; }
+.arc.up { stroke-dasharray: 8 6; opacity: .95; }
+svg.focus .arc { opacity: .15; }
+svg.focus .arc.on { opacity: 1; stroke-width: 6; }
+
+.log { display: grid; gap: 10px; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.toolbar h2 { font-family: var(--display); font-weight: 600; font-size: 26px; text-transform: uppercase; margin: 0; letter-spacing: .02em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.seg button { font: 500 12px var(--body); color: var(--muted); background: none; border: 0; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:focus-visible, .pass:focus-visible { outline: 2px solid var(--upcoming); outline-offset: 2px; }
+
+.pass { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; position: relative; cursor: default; transition: border-color .15s, transform .15s; }
+.pass::before, .pass::after { content: ""; position: absolute; left: 78px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+.pass::before { top: -7px; } .pass::after { bottom: -7px; }
+.pass.on { border-color: var(--ink); }
+.pass .date { font-family: var(--mono); text-align: center; line-height: 1.1; border-right: 1px dashed var(--line); padding-right: 12px; }
+.pass .date b { display: block; font-family: var(--display); font-weight: 800; font-size: 28px; }
+.pass .date small { font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+.route { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .03em; line-height: 1; display: flex; align-items: center; gap: 8px; }
+.route svg { width: 18px; height: 18px; flex: none; }
+.al { display: inline-grid; place-items: center; width: 34px; height: 24px; border-radius: 5px; font: 500 12px var(--mono); color: #fff; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.route .al { margin-right: 4px; }
+.meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.meta code { font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.note { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.badge { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.flown { color: var(--flown); border: 1px solid currentColor; }
+.badge.up { color: var(--upcoming-text); background: color-mix(in srgb, var(--upcoming) 16%, transparent); }
+
+footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
+
+@media (max-width: 480px) {
+  .pass { grid-template-columns: 52px minmax(0, 1fr); }
+  .pass::before, .pass::after { left: 64px; }
+  .pass .badge { grid-column: 2; justify-self: start; }
+  .route { font-size: 22px; }
+  .month .m { font-size: 9px; letter-spacing: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* game layer */
+.game { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .game { grid-template-columns: 1fr; } }
+.pilot { position: relative; overflow: hidden; border-radius: 16px; padding: 20px 22px; color: #fff; background: radial-gradient(circle at 85% 10%, rgba(255,255,255,.08), transparent 45%), #1d2b4a; display: grid; gap: 10px; align-content: start; }
+.pilot .tag { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+.pilot .lvl { display: flex; align-items: baseline; gap: 10px; font: 800 44px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.pilot .lvl small { font: 600 13px var(--mono); padding: 3px 8px; border-radius: 99px; background: #e8a33a; color: #1d2b4a; letter-spacing: .08em; }
+.xp { height: 14px; border-radius: 99px; background: rgba(255,255,255,.18); overflow: hidden; }
+.xp i { display: block; height: 100%; width: 0; background: #e8a33a; transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+.pilot .xpl { display: flex; justify-content: space-between; font: 500 13px var(--mono); opacity: .85; }
+.pilot .stamps { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 14px; }
+.pilot .stamps b { font: 800 26px var(--display); }
+.pilot .hint { font-size: 13px; opacity: .8; }
+.achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.side { display: grid; gap: 20px; min-width: 0; }
+.side .achs { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.ach { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; transition: transform .2s; }
+.ach:hover { transform: translateY(-2px); }
+.ach .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font: 800 20px var(--display); color: var(--surface); background: var(--ink); }
+.ach b { font: 700 15px var(--body); }
+.ach span { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.ach .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.ach .bar i { display: block; height: 100%; background: var(--upcoming); }
+.ach.locked .ic { background: var(--line) !important; color: var(--muted); }
+.ach.locked b { color: var(--muted); }
+.ach .ok { font: 600 11px var(--mono); letter-spacing: .1em; color: var(--upcoming-text); }
+.pass { cursor: pointer; }
+.stampd { position: absolute; right: 118px; top: 50%; transform: translateY(-50%) rotate(-12deg) scale(0); font: 800 18px var(--display); color: #c8323c; border: 3px double #c8323c; border-radius: 8px; padding: 3px 10px 1px; letter-spacing: .12em; opacity: .85; pointer-events: none; transition: transform .35s cubic-bezier(.2,1.6,.4,1); }
+.pass.got .stampd { transform: translateY(-50%) rotate(-12deg) scale(1); }
+@media (max-width: 480px) { .stampd { right: 12px; top: 18px; transform: rotate(-12deg) scale(0); } .pass.got .stampd { transform: rotate(-12deg) scale(1); } }
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); transform: translate(-50%, 140%); background: #1d2b4a; color: #fff; padding: 12px 18px; border-radius: 12px; font: 600 15px var(--body); box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: transform .4s cubic-bezier(.2,1.4,.4,1); z-index: 50; }
+.toast.on { transform: translate(-50%, 0); }
+.confetti { position: fixed; top: -12px; width: 10px; height: 14px; z-index: 60; pointer-events: none; animation: fall 1.8s linear forwards; }
+@keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
+@media (prefers-reduced-motion: reduce) { .xp i, .stampd, .toast { transition: none; } .confetti { display: none; } }
+
+/* collection: airline cards + route mastery, season replay */
+.collection { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 860px) { .collection { grid-template-columns: 1fr; } }
+.colhead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.colhead h2 { font: 600 24px var(--display); text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+.colhead span { font: 500 12px var(--mono); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.tcard { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; justify-items: start; transition: transform .2s; }
+.tcard:hover { transform: translateY(-3px) rotate(-1deg); }
+.tcard .rar { font: 600 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.tcard .rar.uncommon { color: var(--ink); border-color: var(--ink); }
+.tcard .rar.rare { color: #1d2b4a; background: #e8a33a; border-color: #e8a33a; }
+.tcard b { font: 800 30px/1 var(--display); }
+.tcard small { font-size: 12px; color: var(--muted); }
+.routes { display: grid; gap: 10px; }
+.rm { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+.rm b { font: 800 24px var(--display); letter-spacing: .02em; }
+.rm .st { font-size: 22px; letter-spacing: 2px; color: var(--line); }
+.rm .st em { font-style: normal; color: #e8a33a; }
+.rm small { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.playbar { display: flex; align-items: center; gap: 12px; padding: 0 6px 10px; }
+.playbtn { font: 700 14px var(--body); color: #fff; background: #1d2b4a; border: 0; border-radius: 99px; padding: 9px 16px; cursor: pointer; }
+.playbtn:disabled { opacity: .6; cursor: default; }
+.playbtn:focus-visible { outline: 2px solid #e8a33a; outline-offset: 2px; }
+.nowplaying { font: 500 13px var(--mono); color: var(--muted); letter-spacing: .04em; }
+.pilot .quest { margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.08); font-size: 13px; line-height: 1.4; }
+.pilot .quest b { font: 700 11px var(--mono); letter-spacing: .14em; opacity: .7; display: block; }
+.pilot .score { display: flex; gap: 18px; font-size: 13px; opacity: .9; }
+.pilot .score strong { font: 800 22px var(--display); display: block; letter-spacing: .02em; }
+
+/* playful interactions */
+.cell, .month, .ach, .tcard, .rm, .pilot .lvl, h1 { cursor: pointer; user-select: none; }
+.pop { animation: pop .38s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(.93); } 70% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.wiggle { animation: wig .45s; }
+@keyframes wig { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+.shake { animation: shake .5s; }
+@keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+.tcard { overflow: hidden; }
+.tcard.shine::after { content: ""; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.75) 50%, transparent 60%); animation: shine .8s ease-out; pointer-events: none; }
+@keyframes shine { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
+.pass.poof .stampd { transition: transform .3s, opacity .3s; transform: translateY(-50%) rotate(20deg) scale(1.6) !important; opacity: 0; }
+.pass.restamp .stampd { animation: restamp .45s cubic-bezier(.2,1.6,.4,1); }
+@keyframes restamp { 0% { transform: translateY(-50%) rotate(-12deg) scale(1.8); opacity: 0; } 100% { transform: translateY(-50%) rotate(-12deg) scale(1); opacity: .85; } }
+.surprise { font: 700 14px var(--body); color: #1d2b4a; background: #e8a33a; border: 0; border-radius: 99px; padding: 9px 16px; cursor: pointer; }
+.surprise:focus-visible { outline: 2px solid #1d2b4a; outline-offset: 2px; }
+.playbtn:active, .surprise:active, .seg button:active { transform: scale(.94); }
+.rain { position: fixed; top: -40px; font-size: 28px; color: #1d2b4a; z-index: 60; pointer-events: none; animation: rain 2.2s linear forwards; }
+@keyframes rain { to { transform: translateY(110vh) rotate(25deg); } }
+.modal { position: fixed; inset: 0; background: rgba(10,15,30,.55); display: grid; place-items: center; z-index: 70; padding: 16px; }
+.modal .box { width: min(420px, 100%); background: #1d2b4a; color: #fff; border-radius: 18px; padding: 26px 24px; text-align: center; display: grid; gap: 10px; animation: pop .45s cubic-bezier(.2,1.6,.4,1); }
+.modal .box h3 { font: 800 40px/1 var(--display); text-transform: uppercase; margin: 0; letter-spacing: .02em; }
+.modal .box .g { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0; }
+.modal .box .g div { background: rgba(255,255,255,.08); border-radius: 10px; padding: 10px; }
+.modal .box .g b { display: block; font: 800 30px var(--display); color: #e8a33a; }
+.modal .box button { justify-self: center; font: 700 14px var(--body); background: #e8a33a; color: #1d2b4a; border: 0; border-radius: 99px; padding: 10px 20px; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .pop, .wiggle, .shake, .tcard.shine::after, .rain, .modal .box { animation: none !important; } }
+@media (max-width: 600px) { .board .cell.next { grid-column: 1 / -1; } }
+.fx-night { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: radial-gradient(ellipse at 50% 0%, rgba(20,30,70,.55), rgba(5,10,30,.72)); transition: opacity .8s; }
+.fx-night i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; animation: tw 1.4s ease-in-out infinite alternate; }
+@keyframes tw { from { opacity: .2; } to { opacity: 1; } }
+.fx-dawn { position: fixed; inset: 0; z-index: 55; pointer-events: none; background: linear-gradient(0deg, rgba(255,170,90,.45), rgba(255,220,160,.18) 45%, transparent 75%); transition: opacity .8s; }
+.fx-night.out, .fx-dawn.out { opacity: 0; }
+.ach span:not(.ic) { color: var(--muted); }
+.modal .box .ey { font: 500 12px var(--mono); letter-spacing: .16em; opacity: .7; }
+.modal .box .bp { background: #fbf8f1; color: #1d2b4a; border-radius: 14px; padding: 16px; display: grid; gap: 10px; text-align: left; }
+.modal .box .bp .r { display: flex; justify-content: space-between; align-items: center; font: 800 40px var(--display); }
+.modal .box .bp .r.sm { font: 500 13px var(--body); color: #6b7489; margin-top: -8px; }
+.modal .box .bp .gr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font: 600 15px var(--body); border-top: 2px dashed #d8d2c4; padding-top: 10px; }
+.modal .box .bp small { display: block; font: 500 10px var(--mono); letter-spacing: .14em; color: #8a8f9c; }
+.modal .box .nt { font-size: 13px; opacity: .85; }
+.modal .box .qz { display: grid; gap: 8px; }
+.modal .box .qz button { background: rgba(255,255,255,.1); color: #fff; border-radius: 10px; padding: 12px; font-weight: 700; }
+.modal .box .qz button.right { background: #2f9e5b; color: #fff; }
+.modal .box .qz button.wrong { background: #b3323b; color: #fff; }
+.modal .box.light { background: #fbf8f1; color: #1d2b4a; }
+.modal .box .pc { border: 3px solid var(--pc); border-radius: 12px; padding: 18px; display: grid; gap: 6px; background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(0,0,0,.02) 10px 20px); }
+.modal .box .pcl { font: 700 22px Caveat, cursive; color: var(--pc); }
+.modal .box .pcc { font: 800 54px/1 var(--display); color: var(--pc); letter-spacing: .02em; }
+.modal .box .pcs { justify-self: end; font: 700 14px var(--mono); border: 2px dashed var(--pc); color: var(--pc); padding: 4px 8px; transform: rotate(-6deg); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow" id="eyebrow">Flight log</div>
+      <h1><i id="yr" style="font-style:normal"></i> <span>in the air</span></h1>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="months" id="months" aria-label="Flights by month"></div>
+  </header>
+
+  <main>
+    <section class="mapcard" aria-label="Route map">
+      <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><button class="surprise" id="surprise" type="button">✦ Surprise me</button><span class="nowplaying" id="now"></span></div>
+      <svg id="map" viewBox="0 0 910 756" role="img" aria-label="Map of this year's flight routes"></svg>
+      <div class="legend">
+        <span>Line color = airline</span><span id="legendAir" style="display:contents"></span>
+        <span><i class="up"></i>Dashed = upcoming</span>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="badges" aria-label="Badges">
+        <div class="colhead"><h2>Badges</h2><span>Tap one · it plays on the map</span></div>
+        <div class="achs" id="achs"></div>
+      </section>
+      <div class="pilot" id="pilot"></div>
+      <section class="log">
+      <div class="toolbar">
+        <h2>Flights</h2>
+        <div class="seg" role="group" aria-label="Filter flights">
+          <button id="f-all" data-f="all" aria-pressed="true">All</button>
+          <button id="f-flown" data-f="flown" aria-pressed="false">Flown</button>
+          <button id="f-up" data-f="up" aria-pressed="false">Upcoming</button>
+        </div>
+      </div>
+      <div id="list" class="log"></div>
+      </section>
+    </div>
+  </main>
+
+  <section class="collection" aria-label="Collection">
+    <div><div class="colhead"><h2>Airline cards</h2><span id="cardsN"></span></div><div class="cards" id="cards"></div></div>
+    <div><div class="colhead"><h2>Route mastery</h2><span>★ 1 · ★★ 3 · ★★★ 5 flights</span></div><div class="routes" id="routes"></div></div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+// ---- everything below is driven by flights.js (window.FLIGHT_LOG) ----
+const LOG = window.FLIGHT_LOG || { year: new Date().getFullYear(), name: "", airports: {}, airlines: {}, flights: [] };
+const YEAR = LOG.year;
+const AIRPORTS = LOG.airports;
+const FLIGHTS = LOG.flights.map(f => ({ ...f })).sort((a, b) => (a.d + (a.t || "")).localeCompare(b.d + (b.t || "")));
+const DEFAULT_COLORS = ["#E3132C", "#0B2A7A", "#F5A800", "#1FA0C0", "#2E8B57", "#0078D2", "#7a4bb3", "#c2410c", "#0f766e", "#be185d"];
+const AL = {}, LINE = {};
+[...new Set(FLIGHTS.map(f => f.air))].forEach((name, k) => { const a = (LOG.airlines || {})[name] || {}; AL[name] = { c: a.code || name }; LINE[name] = a.color || DEFAULT_COLORS[k % DEFAULT_COLORS.length]; });
+const hasLogo = air => !!(window.LOGO_SRC && LOGO_SRC[AL[air].c]);
+const logoPill = (air, h, w, extra = "") => hasLogo(air) ? LOGO_PILL(AL[air].c, h, w, extra)
+  : `<span class="logo" style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);color:#1d2b4a;font:700 ${Math.round(h * .42)}px var(--body);flex:none;vertical-align:middle;${extra}">${air}</span>`;
+document.getElementById("eyebrow").textContent = (LOG.name ? LOG.name + " · " : "") + "Flight log";
+document.getElementById("yr").textContent = YEAR;
+document.title = `${YEAR} in the Air`;
+document.getElementById("foot").textContent = LOG.footer || "Compiled automatically from flight confirmation emails. Distances are great-circle miles between airports.";
+document.getElementById("legendAir").innerHTML = Object.keys(AL).map(a => `<span><i style="border-top-color:${LINE[a]}"></i>${a}</span>`).join("");
+const badge = name => logoPill(name, 26, 92, "margin-right:6px");
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Live status: a flight counts as "flown" only after it has landed (arrival airport's local time).
+// For testing, "?asof=2026-11-20T09:00" in the address pretends it's that moment.
+const NOW = (() => { const q = /[?&]asof=(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(location.search); return q ? new Date(q[1]) : new Date(); })();
+const today = new Date(NOW); today.setHours(0, 0, 0, 0);
+const AIRPORT_TZ = Object.fromEntries(Object.entries(AIRPORTS).map(([c, a]) => [c, a.tz ?? 8])); // standard-time hours behind UTC
+const nthSunday = (y, m, n) => { const d = new Date(Date.UTC(y, m, 1)); return Date.UTC(y, m, 1 + ((7 - d.getUTCDay()) % 7) + 7 * (n - 1)); };
+function landedAt(f) {
+  const [y, m, d] = f.d.split("-").map(Number);
+  const mins = s => { const r = /(\d+):(\d+)\s*(AM|PM)/.exec(s || ""); if (!r) return null; let h = +r[1] % 12; if (r[3] === "PM") h += 12; return h * 60 + +r[2]; };
+  const [depS, arrS] = (f.t || "").split("→");
+  const dep = mins(depS); let arr = mins(arrS), plus = 0;
+  if (arr === null) arr = dep !== null ? dep + 240 : 23 * 60 + 59; // no landing time: departure + 4h, or end of day
+  else if (dep !== null && arr < dep) plus = 1;                   // lands after midnight
+  const day = Date.UTC(y, m - 1, d + plus), dst = (AIRPORTS[f.to] || {}).dst !== false && day >= nthSunday(y, 2, 2) && day < nthSunday(y, 10, 1); // US DST: 2nd Sun Mar – 1st Sun Nov
+  return new Date(Date.UTC(y, m - 1, d + plus, 0, arr + (AIRPORT_TZ[f.to] - (dst ? 1 : 0)) * 60));
+}
+function scheduleLiveRefresh() {
+  const next = FLIGHTS.map(landedAt).filter(t => t > NOW).sort((a, b) => a - b)[0];
+  if (!next || /asof=/.test(location.search)) return;
+  setTimeout(() => location.reload(), Math.min(next - NOW + 60000, 6 * 3600e3));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && new Date() > next) location.reload(); });
+}
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+FLIGHTS.forEach((f, i) => { f.i = i; f.date = parse(f.d); f.up = landedAt(f) > NOW; f.mi = miles(AIRPORTS[f.from], AIRPORTS[f.to]); });
+scheduleLiveRefresh();
+
+function miles(a, b) {
+  const r = Math.PI / 180, R = 3958.8;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const fmt = n => Math.round(n).toLocaleString("en-US");
+
+/* ---------- board ---------- */
+const usedAirports = [...new Set(FLIGHTS.flatMap(f => [f.from, f.to]))];
+(function board() {
+  const flown = FLIGHTS.filter(f => !f.up), up = FLIGHTS.filter(f => f.up);
+  const total = FLIGHTS.reduce((s, f) => s + f.mi, 0);
+  const airlines = new Set(FLIGHTS.map(f => f.air)).size;
+  const ac = {}; FLIGHTS.forEach(f => ac[f.air] = (ac[f.air] || 0) + 1); const topAir = Object.entries(ac).sort((a, b) => b[1] - a[1])[0];
+  const hc = {}; FLIGHTS.forEach(f => { hc[f.from] = (hc[f.from] || 0) + 1; if (f.to !== f.from) hc[f.to] = (hc[f.to] || 0) + 1; }); const hub = Object.entries(hc).sort((a, b) => b[1] - a[1])[0];
+  const next = up[0];
+  let nextHTML;
+  if (next) {
+    const days = Math.round((next.date - today) / 864e5);
+    nextHTML = `<div class="k">Next departure</div><div class="v">${days === 0 ? "Today" : days + (days === 1 ? " day" : " days")}</div><div class="s">${MONTHS[next.date.getMonth()]} ${next.date.getDate()} · ${next.from} → ${next.to}</div>`;
+  } else {
+    nextHTML = `<div class="k">Next departure</div><div class="v">—</div><div class="s">${FLIGHTS.length ? `Every ${YEAR} flight is flown` : "No flights booked yet"}</div>`;
+  }
+  document.getElementById("board").innerHTML = `
+    <div class="cell"><div class="k">Flights</div><div class="v">${FLIGHTS.length}</div><div class="s">${flown.length} flown · ${up.length} upcoming</div></div>
+    <div class="cell"><div class="k">Miles</div><div class="v">${fmt(total)}</div><div class="s">${fmt(flown.reduce((s, f) => s + f.mi, 0))} so far</div></div>
+    <div class="cell"><div class="k">Airlines</div><div class="v">${airlines}</div><div class="s">${topAir ? `${topAir[0]} the most (${topAir[1]})` : "—"}</div></div>
+    <div class="cell"><div class="k">Airports</div><div class="v">${usedAirports.length}</div><div class="s">${hub ? `${hub[0]} on ${hub[1]} of ${FLIGHTS.length} flights` : "—"}</div></div>
+    <div class="cell next">${nextHTML}</div>`;
+})();
+
+/* ---------- month strip ---------- */
+(function months() {
+  const el = document.getElementById("months");
+  const nowM = today.getFullYear() === YEAR ? today.getMonth() : -1;
+  el.innerHTML = MONTHS.map((m, i) => {
+    const dots = FLIGHTS.filter(f => f.date.getMonth() === i).map(f => `<span class="dot${f.up ? " up" : ""}" title="${m} ${f.date.getDate()}: ${f.from} → ${f.to}"></span>`).join("");
+    return `<div class="month${i === nowM ? " now" : ""}" data-m="${i}" title="Tap to fly ${m}"><span class="m">${m.toUpperCase()}</span><span class="dots">${dots}</span></div>`;
+  }).join("");
+})();
+
+/* ---------- map: real coastlines and state lines, one line per flight in its airline's color ---------- */
+const svg = document.getElementById("map");
+(function map() {
+  const W = 910, H = 756, d3s = d3.select(svg);
+  // fit the map to this year's airports (whole lower 48 when there are none yet)
+  const ll = usedAirports.map(c => [AIRPORTS[c].lon, AIRPORTS[c].lat]);
+  let lon0 = -124.5, lon1 = -67, lat0 = 25, lat1 = 49.4;
+  if (ll.length) { lon0 = Math.min(...ll.map(p => p[0])); lon1 = Math.max(...ll.map(p => p[0])); lat0 = Math.min(...ll.map(p => p[1])); lat1 = Math.max(...ll.map(p => p[1]));
+    const padLon = Math.max(3, (lon1 - lon0) * .18), padLat = Math.max(2.5, (lat1 - lat0) * .2); lon0 -= padLon; lon1 += padLon; lat0 -= padLat; lat1 += padLat; }
+  const wide = lon1 - lon0 > 90 || lat1 - lat0 > 55;
+  const proj = (wide ? d3.geoNaturalEarth1().rotate([-(lon0 + lon1) / 2, 0]) : d3.geoConicConformal().parallels([lat0 + (lat1 - lat0) / 3, lat1 - (lat1 - lat0) / 3]).rotate([-(lon0 + lon1) / 2, 0]))
+    .fitExtent([[16, 16], [W - 16, H - 16]], { type: "MultiPoint", coordinates: [[lon0, lat0], [lon1, lat0], [lon1, lat1], [lon0, lat1]] });
+  const path = d3.geoPath(proj);
+  d3s.append("rect").attr("width", W).attr("height", H).attr("fill", "var(--ocean)");
+  d3s.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path")
+    .attr("d", path).attr("fill", d => d.id === "840" ? "var(--land)" : "var(--land2)").attr("stroke", "var(--line)").attr("stroke-width", 1);
+  d3s.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (x, y) => x !== y))).attr("fill", "none").attr("stroke", "var(--line)").attr("stroke-width", 1.2);
+  const pt = c => proj([AIRPORTS[c].lon, AIRPORTS[c].lat]);
+  // one entry per city pair; alternate the bulge side so neighbouring routes don't overlap
+  const RK = {}; FLIGHTS.forEach(f => { const k = [f.from, f.to].sort().join("-"); (RK[k] = RK[k] || 0); RK[k]++; });
+  const ROUTES = Object.keys(RK).sort((x, y) => RK[y] - RK[x]).map((key, n) => { const [a, b] = key.split("-"); return { key, a, b, side: n % 2 ? 1 : -1, k: .2 }; });
+  const halo = d3s.append("g"), lines = d3s.append("g"), labels = d3s.append("g");
+  ROUTES.forEach((r, ri) => {
+    const fl = FLIGHTS.filter(f => [f.from, f.to].sort().join("-") === r.key);
+    if (r.a === r.b) return;
+    const A = pt(r.a), B = pt(r.b), dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+    const nx = -dy / len * r.side, ny = dx / len * r.side;
+    fl.forEach((f, i) => {
+      const kk = fl.length > 1 ? r.k * (.45 + 1.1 * i / (fl.length - 1)) : r.k;
+      const C = [(A[0] + B[0]) / 2 + nx * kk * len, (A[1] + B[1]) / 2 + ny * kk * len];
+      const d = `M${A} Q${C} ${B}`;
+      halo.append("path").attr("d", d).attr("fill", "none").attr("stroke", "var(--surface)").attr("stroke-width", 8).attr("stroke-linecap", "round").style("pointer-events", "none");
+      const p = lines.append("path").attr("d", d).attr("class", "arc" + (f.up ? " up" : " flown")).attr("data-i", f.i).style("stroke", LINE[f.air]);
+      p.append("title").text(`${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}${f.up ? " (upcoming)" : ""}`);
+      p.on("mouseenter", () => focus(f.i)).on("mouseleave", () => focus(null));
+    });
+    // route label with the airlines that flew it
+    const C0 = [(A[0] + B[0]) / 2 + nx * r.k * len, (A[1] + B[1]) / 2 + ny * r.k * len];
+    const M = [.25 * A[0] + .5 * C0[0] + .25 * B[0], .25 * A[1] + .5 * C0[1] + .25 * B[1]];
+    const airs = {}; fl.forEach(f => airs[f.air] = (airs[f.air] || 0) + 1);
+    const list = Object.entries(airs).sort((x, y) => y[1] - x[1]);
+    const w = 24 + list.length * 104, h = 92;
+    if (ri >= 4) return; // label the four busiest routes only
+    const ox = nx * 70, oy = ny * 70;
+    let x = M[0] + ox - (ox < 0 ? w : 0), y = M[1] + oy - h / 2;
+    x = Math.max(8, Math.min(W - w - 8, x)); y = Math.max(8, Math.min(H - h - 8, y));
+    labels.append("line").attr("x1", Math.max(x, Math.min(x + w, M[0]))).attr("y1", Math.max(y, Math.min(y + h, M[1]))).attr("x2", M[0]).attr("y2", M[1]).attr("stroke", "var(--muted)").attr("stroke-dasharray", "3 5");
+    const g = labels.append("g").attr("transform", `translate(${x},${y})`);
+    g.append("rect").attr("width", w).attr("height", h).attr("rx", 12).attr("fill", "var(--surface)").attr("stroke", "var(--line)").attr("stroke-width", 1.5);
+    g.append("text").attr("x", 14).attr("y", 30).attr("font-family", "var(--display)").attr("font-weight", 800).attr("font-size", 26).attr("fill", "var(--ink)").text(`${r.a} ⇄ ${r.b}`);
+    g.append("text").attr("x", w - 14).attr("y", 30).attr("text-anchor", "end").attr("font-family", "var(--mono)").attr("font-size", 15).attr("fill", "var(--muted)").text(`${fl.length} flight${fl.length > 1 ? "s" : ""}`);
+    list.forEach(([air, n], j) => {
+      const bx = 12 + j * 104;
+      g.append("rect").attr("x", bx).attr("y", 44).attr("width", 96).attr("height", 34).attr("rx", 9).attr("fill", "#fff").attr("stroke", LINE[air]).attr("stroke-width", 2);
+      if (hasLogo(air)) g.append("image").attr("href", LOGO_SRC[AL[air].c]()).attr("x", bx + 8).attr("y", 50).attr("width", 80).attr("height", 22).attr("preserveAspectRatio", "xMidYMid meet");
+      else g.append("text").attr("x", bx + 48).attr("y", 66).attr("text-anchor", "middle").attr("font-family", "var(--body)").attr("font-weight", 700).attr("font-size", 14).attr("fill", "#1d2b4a").text(air);
+      if (n > 1) { g.append("circle").attr("cx", bx + 94).attr("cy", 46).attr("r", 11).attr("fill", "var(--ink)"); g.append("text").attr("x", bx + 94).attr("y", 51).attr("text-anchor", "middle").attr("font-family", "var(--mono)").attr("font-size", 13).attr("font-weight", 700).attr("fill", "var(--surface)").text(n); }
+    });
+  });
+  usedAirports.forEach(c => { const a = AIRPORTS[c];
+    const [x, y] = pt(c);
+    // label on the side with more room; nudge down if another airport sits just above
+    const right = x < W - 170, near = usedAirports.some(o => o !== c && Math.abs(pt(o)[0] - x) < 60 && pt(o)[1] < y && y - pt(o)[1] < 40);
+    const L = { [c]: [right ? 16 : -16, near ? 28 : -10, right ? "start" : "end"] };
+    labels.append("circle").attr("cx", x).attr("cy", y).attr("r", 9).attr("fill", "var(--surface)").attr("stroke", "var(--ink)").attr("stroke-width", 3.5);
+    const t = labels.append("text").attr("x", x + L[c][0]).attr("y", y + L[c][1]).attr("text-anchor", L[c][2]).attr("fill", "var(--ink)");
+    t.append("tspan").attr("font-family", "var(--display)").attr("font-weight", 800).attr("font-size", 30).text(c);
+    t.append("tspan").attr("x", x + L[c][0]).attr("dy", 20).attr("font-family", "var(--body)").attr("font-size", 14).attr("fill", "var(--muted)").text(a.city);
+  });
+})();
+
+/* ---------- log ---------- */
+const plane = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" transform="rotate(90 12 12)"/></svg>`;
+let filter = "all";
+function renderList() {
+  const list = document.getElementById("list");
+  const rows = FLIGHTS.filter(f => filter === "all" || (filter === "up") === f.up);
+  list.innerHTML = rows.map(f => `
+    <article class="pass" tabindex="0" data-i="${f.i}" aria-label="${MONTHS[f.date.getMonth()]} ${f.date.getDate()}, ${AIRPORTS[f.from].city} to ${AIRPORTS[f.to].city}">
+      <div class="date"><small>${MONTHS[f.date.getMonth()].toUpperCase()}</small><b>${f.date.getDate()}</b></div>
+      <div style="min-width:0">
+        <div class="route">${badge(f.air)}${f.from} ${plane} ${f.to}</div>
+        <div class="meta">${f.air}${f.no ? ` · <code>${f.no}</code>` : ""}${f.t ? ` · ${f.t}` : ""} · ${fmt(f.mi)} mi</div>
+        ${f.note ? `<div class="note">${f.note}</div>` : ""}
+      </div>
+      <span class="badge ${f.up ? "up" : "flown"}">${f.up ? "Upcoming" : "Flown"}</span>
+      <span class="stampd">${f.up ? "BOOKED" : "STAMPED"}</span>
+    </article>`).join("") || `<p class="meta">No flights in this view.</p>`;
+  list.querySelectorAll(".pass").forEach(p => {
+    const i = +p.dataset.i;
+    p.addEventListener("mouseenter", () => focus(i));
+    p.addEventListener("mouseleave", () => focus(null));
+    p.addEventListener("focus", () => focus(i));
+    p.addEventListener("blur", () => focus(null));
+    p.classList.toggle("got", collected.has(i));
+    p.addEventListener("click", () => collect(i, p));
+    p.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); collect(i, p); } });
+  });
+}
+function focus(i) {
+  svg.classList.toggle("focus", i !== null);
+  svg.querySelectorAll(".arc").forEach(a => a.classList.toggle("on", +a.dataset.i === i));
+  document.querySelectorAll(".pass").forEach(p => p.classList.toggle("on", +p.dataset.i === i));
+}
+
+/* ---------- game: pilot level, achievements, collectible stamps ---------- */
+const flownF = FLIGHTS.filter(f => !f.up);
+const flownMi = flownF.reduce((s, f) => s + f.mi, 0);
+const LEVELS = [["Cadet", 0], ["Co-pilot", 2500], ["Captain", 7500], ["Sky Legend", 15000], ["Orbit Club", 24901]];
+const depHour = f => { if (!f.t) return null; const m = /^(\d+):(\d+)\s*(AM|PM)/.exec(f.t); if (!m) return null; let h = +m[1] % 12; if (m[3] === "PM") h += 12; return h + +m[2] / 60; };
+let collected = new Set();
+try { collected = new Set(JSON.parse(localStorage.getItem("my-flight-stamps-" + YEAR) || "[]")); } catch (e) {}
+
+function renderPilot() {
+  let li = 0; LEVELS.forEach((l, k) => { if (flownMi >= l[1]) li = k; });
+  const cur = LEVELS[li], nxt = LEVELS[li + 1];
+  const pct = nxt ? (flownMi - cur[1]) / (nxt[1] - cur[1]) * 100 : 100;
+  document.getElementById("pilot").innerHTML = `
+    <div class="tag">Pilot profile · ${!FLIGHTS.length ? "season ahead" : FLIGHTS.some(f => f.up) ? "season in progress" : "season complete"}</div>
+    <div class="lvl">${cur[0]} <small>LVL ${li + 1}</small></div>
+    <div class="xp"><i id="xpbar"></i></div>
+    <div class="xpl"><span>${fmt(flownMi)} XP (miles flown)</span><span>${nxt ? `${fmt(nxt[1] - flownMi)} to ${nxt[0]}` : "max level"}</span></div>
+    <div class="stamps"><b id="stampN">${collected.size}/${FLIGHTS.length}</b><span>stamps collected</span></div>
+    <div class="score"><div><strong id="score">0</strong>score</div><div><strong id="achN">0/10</strong>achievements</div></div>
+    ${nextUp ? `<div class="quest"><b>NEXT QUEST</b>${MONTHS[nextUp.date.getMonth()]} ${nextUp.date.getDate()} · ${nextUp.from} → ${nextUp.to} on ${nextUp.air} · in ${Math.round((nextUp.date - today) / 864e5)} days</div>` : `<div class="quest"><b>${FLIGHTS.length ? "SEASON COMPLETE" : "READY FOR TAKEOFF"}</b>${FLIGHTS.length ? `Every ${YEAR} flight is flown.` : "Your first booking will show up here."}</div>`}
+    <div class="hint">Tap a flight below to stamp it, or press Play the season on the map.</div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => { const x = document.getElementById("xpbar"); if (x) x.style.width = Math.min(100, pct) + "%"; }));
+}
+
+function renderAchs() {
+  const routeCounts = {}; flownF.forEach(f => { const k = [f.from, f.to].sort().join("-"); routeCounts[k] = (routeCounts[k] || 0) + 1; }); routeCounts._ = 0;
+  const A = [
+    { ic: "✈", c: "#2b4c8c", t: "First takeoff", d: "Fly your first flight", have: flownF.length, need: 1 },
+    { ic: "10", c: "#7b4bb3", t: "Frequent flyer", d: "Fly 10 flights", have: flownF.length, need: 10 },
+    { ic: "⇄", c: "#1fa0c0", t: "Commuter", d: "Fly one route 5 times", have: Math.max(0, ...Object.values(routeCounts)), need: 5 },
+    { ic: "☾", c: "#3b2a7a", t: "Red-eye survivor", d: "Take 2 overnight flights (10 PM–4 AM)", have: flownF.filter(f => depHour(f) !== null && (depHour(f) >= 22 || depHour(f) < 4)).length, need: 2 },
+    { ic: "☀", c: "#f5a800", t: "Early bird", d: "Take off between 4 and 7 AM", have: flownF.filter(f => depHour(f) !== null && depHour(f) >= 4 && depHour(f) < 7).length, need: 1 },
+    { ic: "6", c: "#e3132c", t: "Airline collector", d: "Fly 6 different airlines", have: new Set(flownF.map(f => f.air)).size, need: 6 },
+    { ic: "★", c: "#2e8b57", t: "New horizons", d: "Land in 4 different airports", have: new Set(flownF.map(f => f.to)).size, need: 4 },
+    { ic: "◐", c: "#0078d2", t: "Halfway around", d: "Fly 12,450 miles (half the Earth)", have: Math.round(flownMi), need: 12450 },
+    { ic: "✓", c: "#c8323c", t: "Season finale", d: `Fly every booked flight of ${YEAR}`, have: flownF.length, need: Math.max(1, FLIGHTS.length) },
+    { ic: "✦", c: "#e0598b", t: "Stamp collector", d: "Collect every stamp below", have: collected.size, need: Math.max(1, FLIGHTS.length) },
+  ];
+  const done = A.filter(a => a.have >= a.need).length; achDone = done;
+  document.getElementById("achs").innerHTML = A.map(a => {
+    const ok = a.have >= a.need, pct = Math.min(100, a.have / a.need * 100);
+    return `<div class="ach${ok ? "" : " locked"}" title="${a.d}"><span class="ic">${a.ic}</span><b>${a.t}</b><span>${a.d}</span>${ok ? `<div class="ok">UNLOCKED</div>` : `<div class="bar"><i style="width:${pct}%"></i></div><span>${a.need > 1000 ? fmt(a.have) + " / " + fmt(a.need) : a.have + " / " + a.need}</span>`}</div>`;
+  }).join("");
+  return done;
+}
+
+function toast(msg) {
+  let t = document.querySelector(".toast"); if (!t) { t = document.createElement("div"); t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2200);
+}
+function confetti() {
+  const cols = ["#e8a33a","#1d2b4a","#c9d2e0"];
+  for (let k = 0; k < 80; k++) { const c = document.createElement("i"); c.className = "confetti"; c.style.left = Math.random() * 100 + "vw"; c.style.background = cols[k % cols.length]; c.style.animationDelay = Math.random() * .6 + "s"; c.style.borderRadius = k % 3 ? "2px" : "50%"; document.body.appendChild(c); setTimeout(() => c.remove(), 2600); }
+}
+function fly(i, dur = 1600) {
+  return new Promise(done => {
+  const arc = svg.querySelector(`.arc[data-i="${i}"]`); if (!arc || matchMedia("(prefers-reduced-motion: reduce)").matches) { done(); return; }
+  const len = arc.getTotalLength(), g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.innerHTML = `<circle r="15" fill="var(--surface)" stroke="${arc.style.stroke}" stroke-width="3"/><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="${arc.style.stroke}"/>`;
+  svg.appendChild(g); focus(i);
+  const t0 = performance.now();
+  (function step(now) {
+    const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const p = arc.getPointAtLength(len * e), q = arc.getPointAtLength(Math.min(len, len * e + 1));
+    g.setAttribute("transform", `translate(${p.x},${p.y}) rotate(${Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI})`);
+    if (t < 1) requestAnimationFrame(step); else setTimeout(() => { g.remove(); focus(null); done(); }, 250);
+  })(t0);
+  });
+}
+function collect(i, card, quiet) {
+  if (!quiet) fly(i);
+  if (collected.has(i)) { if (card) { card.classList.remove("restamp"); void card.offsetWidth; card.classList.add("restamp"); } if (!quiet) toast(pick(FACTS)); return; }
+  collected.add(i); if (card) card.classList.add("got");
+  try { localStorage.setItem("my-flight-stamps-" + YEAR, JSON.stringify([...collected])); } catch (e) {}
+  const f = FLIGHTS[i];
+  document.getElementById("stampN").textContent = `${collected.size}/${FLIGHTS.length}`;
+  renderAchs(); renderScore();
+  if (collected.size === FLIGHTS.length) { toast(`Passport complete! All ${FLIGHTS.length} stamps collected`); confetti(); }
+  else if (!quiet) toast(`Stamp collected: ${f.from} → ${f.to} · ${collected.size}/${FLIGHTS.length}`);
+}
+
+/* ---------- score, airline cards, route mastery, season replay ---------- */
+let achDone = 0;
+const nextUp = FLIGHTS.find(f => f.up);
+function renderScore() {
+  const score = achDone * 100 + collected.size * 10 + Math.floor(flownMi / 10);
+  const el = document.getElementById("score"); if (el) el.textContent = fmt(score);
+  const a = document.getElementById("achN"); if (a) a.textContent = `${achDone}/10`;
+  const n = document.getElementById("stampN"); if (n) n.textContent = `${collected.size}/${FLIGHTS.length}`;
+}
+document.getElementById("cardsN").textContent = `${new Set(FLIGHTS.map(f => f.air)).size} collected`;
+(function cards() {
+  const byAir = {}; FLIGHTS.forEach(f => { (byAir[f.air] = byAir[f.air] || []).push(f); });
+  document.getElementById("cards").innerHTML = Object.entries(byAir).sort((x, y) => y[1].length - x[1].length).map(([air, fs]) => {
+    const r = fs.length >= 3 ? "common" : fs.length === 2 ? "uncommon" : "rare";
+    return `<div class="tcard"><span class="rar ${r}">${r}</span>${logoPill(air, 34, 118)}<b>×${fs.length}</b><small>${fmt(fs.reduce((s, f) => s + f.mi, 0))} mi · ${fs.filter(f => !f.up).length} flown</small></div>`;
+  }).join("");
+})();
+(function routes() {
+  const R = {}; FLIGHTS.forEach(f => { const key = [f.from, f.to].sort().join("-"); const k = key.replace("-", " ⇄ "); (R[k] = R[k] || []).push(f); });
+  document.getElementById("routes").innerHTML = Object.entries(R).sort((x, y) => y[1].length - x[1].length).map(([k, fs]) => {
+    const flown = fs.filter(f => !f.up).length, stars = flown >= 5 ? 3 : flown >= 3 ? 2 : flown >= 1 ? 1 : 0;
+    const nextNeed = stars === 3 ? null : [1, 3, 5][stars];
+    return `<div class="rm"><b>${k}</b><span class="st" aria-label="${stars} of 3 stars"><em>${"★".repeat(stars)}</em>${"★".repeat(3 - stars)}</span><small>${flown} flown${fs.length > flown ? ` · ${fs.length - flown} booked` : ""}${nextNeed ? ` · ${nextNeed - flown} more for the next star` : " · mastered"}</small></div>`;
+  }).join("");
+})();
+document.getElementById("play").addEventListener("click", async e => {
+  const btn = e.currentTarget, now = document.getElementById("now");
+  btn.disabled = true;
+  const order = [...FLIGHTS].sort((a, b) => a.date - b.date);
+  for (const [k, f] of order.entries()) {
+    now.textContent = `Flight ${k + 1} of ${order.length} · ${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} · ${f.air}`;
+    await fly(f.i, 1100);
+    collect(f.i, document.querySelector(`.pass[data-i="${f.i}"]`), true);
+  }
+  now.textContent = "Season replayed · every stamp collected";
+  btn.disabled = false; btn.textContent = "↺ Replay the season";
+  if (collected.size === FLIGHTS.length) confetti();
+});
+
+renderPilot(); renderAchs(); renderScore();
+document.getElementById("now").textContent = FLIGHTS.length ? `Replays all ${FLIGHTS.length} flights in order` : "No flights yet this year";
+if (!FLIGHTS.length) { document.getElementById("play").disabled = true;
+  document.getElementById("cards").innerHTML = `<p class="meta">Airline cards appear as you book.</p>`;
+  document.getElementById("routes").innerHTML = `<p class="meta">Routes earn stars as you fly them.</p>`; }
+
+/* ---------- playful interactions & surprises ---------- */
+const FACTS = (() => {
+  if (!FLIGHTS.length) return ["No flights yet this year. Your first booking will land here."];
+  const c = {}; FLIGHTS.forEach(f => c[f.air] = (c[f.air] || 0) + 1); const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+  const rc = {}; FLIGHTS.forEach(f => { const k = [f.from, f.to].sort().join(" ⇄ "); rc[k] = (rc[k] || 0) + 1; }); const tr = Object.entries(rc).sort((a, b) => b[1] - a[1])[0];
+  const longest = FLIGHTS.reduce((a, b) => b.mi > a.mi ? b : a), total = FLIGHTS.reduce((s, f) => s + f.mi, 0);
+  const mc = {}; FLIGHTS.forEach(f => mc[f.date.getMonth()] = (mc[f.date.getMonth()] || 0) + 1); const bm = Object.entries(mc).sort((a, b) => b[1] - a[1])[0];
+  const timed = FLIGHTS.filter(f => depHour(f) !== null), early = timed.sort((a, b) => depHour(a) - depHour(b))[0];
+  return [
+    `${top[0]} flew you the most this year: ${top[1]} flight${top[1] > 1 ? "s" : ""}.`,
+    `${tr[0]} is your most-flown route: ${tr[1]} flight${tr[1] > 1 ? "s" : ""}.`,
+    `Longest flight: ${longest.from} → ${longest.to}, ${fmt(longest.mi)} miles.`,
+    `${fmt(total)} miles is about ${Math.round(total / 24901 * 100)}% of the way around the Earth.`,
+    `Busiest month: ${MONTHS[bm[0]]}, with ${bm[1]} flight${bm[1] > 1 ? "s" : ""}.`,
+    early ? `Earliest takeoff: ${early.t.split(" → ")[0]} on ${MONTHS[early.date.getMonth()]} ${early.date.getDate()}.` : `${FLIGHTS.length} flights booked so far this year.`,
+    `${Object.keys(c).length} airline${Object.keys(c).length > 1 ? "s" : ""} this year.`,
+  ];
+})();
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const pop = el => { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); };
+const wiggle = el => { el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle"); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function flySeq(list, dur = 1000) { for (const f of list) await fly(f.i, dur); }
+
+// filters: bounce + fun fact
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => { pop(b); toast(pick(FACTS)); }));
+// stat tiles: count up again
+document.getElementById("board").addEventListener("click", e => {
+  const cell = e.target.closest(".cell"); if (!cell) return; pop(cell);
+  const v = cell.querySelector(".v"); const m = /^([\d,]+)(.*)$/.exec(v.textContent.trim()); if (!m) return;
+  const target = +m[1].replace(/,/g, ""), rest = m[2], t0 = performance.now();
+  (function step(now) { const t = Math.min(1, (now - t0) / 900), e2 = 1 - Math.pow(1 - t, 3); v.textContent = fmt(target * e2) + rest; if (t < 1) requestAnimationFrame(step); })(t0);
+});
+// month dots: fly that month
+document.getElementById("months").addEventListener("click", e => {
+  const mo = e.target.closest(".month"); if (!mo) return; pop(mo);
+  const list = FLIGHTS.filter(f => f.date.getMonth() === +mo.dataset.m);
+  if (!list.length) { toast(`No flights in ${MONTHS[+mo.dataset.m]}. A quiet month on the ground.`); return; }
+  toast(`${MONTHS[+mo.dataset.m]}: ${list.length} flight${list.length > 1 ? "s" : ""}`); flySeq(list);
+});
+// achievements: each badge plays something that matches what it's for
+const fl2 = f => `${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to}`;
+const toMap = () => document.querySelector(".mapcard").scrollIntoView({ behavior: "smooth", block: "center" });
+function overlay(kind) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const o = document.createElement("div");
+  o.className = "fx-" + kind;
+  o.innerHTML = kind === "night" ? Array.from({ length: 60 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${Math.random() * 1.5}s"></i>`).join("") : "";
+  document.body.appendChild(o); setTimeout(() => o.classList.add("out"), 2600); setTimeout(() => o.remove(), 3400);
+}
+function burstAtMap(i, label) {
+  const arc = svg.querySelector(`.arc[data-i="${i}"]`); if (!arc) return;
+  const p = arc.getPointAtLength(arc.getTotalLength()), NS = "http://www.w3.org/2000/svg";
+  const g = document.createElementNS(NS, "g"); g.setAttribute("class", "mapburst"); g.setAttribute("transform", `translate(${p.x},${p.y})`);
+  g.innerHTML = `<circle r="10" fill="none" stroke="#e8a33a" stroke-width="4"/><path d="M0 -26 L7 -8 L26 -8 L11 4 L17 23 L0 12 L-17 23 L-11 4 L-26 -8 L-7 -8 Z" fill="#e8a33a" stroke="#1d2b4a" stroke-width="2"/>${label ? `<text y="46" text-anchor="middle" font-family="var(--display)" font-weight="800" font-size="22" fill="var(--ink)" paint-order="stroke" stroke="var(--surface)" stroke-width="5">${label}</text>` : ""}`;
+  svg.appendChild(g); setTimeout(() => g.remove(), 2600);
+}
+const flownSorted = () => FLIGHTS.filter(f => !f.up).sort((a, b) => a.date - b.date);
+const BADGE = {
+  "First takeoff": async (a, say) => { const f = flownSorted()[0]; if (!f) return say("Your first flight of the year will start this."); toMap(); say(`Where it all began: ${fl2(f)} on ${f.air}`); await sleep(400); await fly(f.i, 1800); burstAtMap(f.i, "Flight 1"); },
+  "Frequent flyer": async (a, say) => { const list = flownSorted().slice(0, 10); if (!list.length) return say("No flights flown yet"); toMap(); await sleep(400);
+    for (const [k, f] of list.entries()) { say(`Flight ${k + 1} of 10 · ${fl2(f)}`); await fly(f.i, 520); }
+    burstAtMap(list[list.length - 1].i, list.length >= 10 ? "10th flight" : `${list.length} so far`); },
+  "Commuter": async (a, say) => { const rc = {}; flownSorted().forEach(f => { const k = [f.from, f.to].sort().join(" ⇄ "); (rc[k] = rc[k] || []).push(f); });
+    const [rk, list] = Object.entries(rc).sort((x, y) => y[1].length - x[1].length)[0] || ["", []]; if (!list.length) return say("No routes flown yet"); toMap(); await sleep(400);
+    for (const [k, f] of list.entries()) { say(`${rk} · trip ${k + 1} of ${list.length} · ${fl2(f)}`); await fly(f.i, 700); }
+    say(`Most-flown route: ${rk}, ${list.length} times`); },
+  "Red-eye survivor": async (a, say) => { const list = FLIGHTS.filter(f => !f.up && depHour(f) !== null && (depHour(f) >= 22 || depHour(f) < 4)); overlay("night"); toMap(); await sleep(400);
+    for (const f of list) { say(`Red-eye · ${fl2(f)} · departs ${f.t.split(" → ")[0]}`); await fly(f.i, 1100); } },
+  "Early bird": async (a, say) => { const f = FLIGHTS.find(f => !f.up && depHour(f) !== null && depHour(f) >= 4 && depHour(f) < 7); if (!f) return; overlay("dawn"); toMap(); await sleep(400);
+    say(`Up before sunrise: ${fl2(f)} · wheels up ${f.t.split(" → ")[0]}`); await fly(f.i, 1600); },
+  "Airline collector": async (a, say) => { const cards = [...document.querySelectorAll(".tcard")]; cards[0].scrollIntoView({ behavior: "smooth", block: "center" }); await sleep(500);
+    for (const [k, c] of cards.entries()) { c.classList.remove("shine"); void c.offsetWidth; c.classList.add("shine"); pop(c); say(`Airline ${k + 1} of ${cards.length} collected`); await sleep(420); }
+    confettiAt(cards[cards.length - 1]); say(`All ${cards.length} airlines collected`); },
+  "New horizons": async (a, say) => { const seen = new Set(), firsts = flownSorted().filter(f => !seen.has(f.to) && seen.add(f.to)); if (!firsts.length) return say("No landings yet"); toMap(); await sleep(400);
+    for (const f of firsts) { say(`First landing in ${AIRPORTS[f.to].city} · ${fl2(f)}`); await fly(f.i, 900); burstAtMap(f.i, f.to); } },
+  "Halfway around": async (a, say) => { const left = 12450 - Math.round(flownMi); const bar = a.querySelector(".bar i"); if (bar) { const w = bar.style.width; bar.style.transition = "none"; bar.style.width = "0"; void bar.offsetWidth; bar.style.transition = "width 1.2s cubic-bezier(.2,.8,.2,1)"; bar.style.width = w; }
+    say(left > 0 ? `${fmt(left)} more miles to fly halfway around the Earth` : "Halfway around the Earth!"); },
+  "Season finale": async (a, say) => { toMap(); await sleep(400); document.getElementById("play").click(); },
+  "Stamp collector": async (a, say) => { const left = [...document.querySelectorAll(".pass:not(.got)")];
+    if (!left.length) { say("Passport complete! Every stamp collected"); confetti(); return; }
+    left[0].scrollIntoView({ behavior: "smooth", block: "center" }); await sleep(450);
+    left.forEach((c, k) => setTimeout(() => wiggle(c), k * 70)); say(`${left.length} stamp${left.length > 1 ? "s" : ""} left · tap a flight to stamp it`); },
+};
+let badgeRun = 0;
+document.getElementById("achs").addEventListener("click", async e => {
+  const a = e.target.closest(".ach"); if (!a) return;
+  const name = a.querySelector("b").textContent, locked = a.classList.contains("locked");
+  pop(a); if (!locked) confettiAt(a);
+  const run = BADGE[name];
+  if (!run) { toast(`${name} · ${locked ? "keep flying!" : "unlocked!"}`); return; }
+  const id = ++badgeRun; run(a, m => { if (id === badgeRun) toast(m); });
+});
+// airline cards: shine + a stat
+document.getElementById("cards").addEventListener("click", e => {
+  const c = e.target.closest(".tcard"); if (!c) return;
+  c.classList.remove("shine"); void c.offsetWidth; c.classList.add("shine"); pop(c);
+  const rar = c.querySelector(".rar").textContent; toast(`${rar[0].toUpperCase() + rar.slice(1)} card · ${c.querySelector("small").textContent}`);
+});
+// route mastery: replay the route
+document.getElementById("routes").addEventListener("click", e => {
+  const r = e.target.closest(".rm"); if (!r) return; pop(r);
+  const [a, b] = r.querySelector("b").textContent.split(" ⇄ ");
+  const list = FLIGHTS.filter(f => [f.from, f.to].sort().join(" ⇄ ") === [a, b].sort().join(" ⇄ "));
+  toast(`Replaying ${a} ⇄ ${b} · ${list.length} flights`); flySeq(list, 800);
+});
+// pilot level: a rank-up preview
+document.getElementById("pilot").addEventListener("click", e => {
+  const l = e.target.closest(".lvl"); if (!l) return; pop(l);
+  let li = 0; LEVELS.forEach((x, k) => { if (flownMi >= x[1]) li = k; });
+  const nxt = LEVELS[li + 1]; toast(nxt ? `Next rank: ${nxt[0]} · ${fmt(nxt[1] - flownMi)} miles to go` : "Top rank reached!");
+});
+// confetti from an element
+function confettiAt(el) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = el.getBoundingClientRect(), cols = ["#e8a33a", "#1d2b4a", "#c9d2e0"];
+  for (let k = 0; k < 24; k++) {
+    const c = document.createElement("i"); c.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;width:8px;height:10px;background:${cols[k % 3]};z-index:60;pointer-events:none;border-radius:2px;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .9s`;
+    document.body.appendChild(c);
+    requestAnimationFrame(() => { const ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; c.style.transform = `translate(${Math.cos(ang) * d}px,${Math.sin(ang) * d}px) rotate(${Math.random() * 540}deg)`; c.style.opacity = "0"; });
+    setTimeout(() => c.remove(), 1000);
+  }
+}
+function planeRain() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  for (let k = 0; k < 28; k++) { const p = document.createElement("span"); p.className = "rain"; p.textContent = "✈"; p.style.left = Math.random() * 100 + "vw"; p.style.animationDelay = Math.random() * .8 + "s"; p.style.fontSize = 18 + Math.random() * 22 + "px"; document.body.appendChild(p); setTimeout(() => p.remove(), 3200); }
+}
+// surprise button: a deck of real moments, shuffled so nothing repeats until you've seen them all
+function card(html, cls = "") {
+  document.querySelectorAll(".modal").forEach(m => m.remove());
+  const m = document.createElement("div"); m.className = "modal"; m.setAttribute("role", "dialog");
+  m.innerHTML = `<div class="box ${cls}">${html}<button type="button" class="close">Close</button></div>`;
+  m.addEventListener("click", ev => { if (ev.target === m || ev.target.classList.contains("close")) m.remove(); });
+  document.body.appendChild(m); m.querySelector(".close").focus(); return m;
+}
+const flownList = () => FLIGHTS.filter(f => !f.up).sort((a, b) => a.date - b.date);
+const airMinutes = f => { const [a, b] = (f.t || "").split("→"); if (!b) return null; const dep = landedAt({ ...f, t: a + "→" + a }), arr = landedAt(f);
+  const tz = c => AIRPORT_TZ[c]; return Math.round((arr - dep) / 60000) + (tz(f.from) - tz(f.to)) * 60; };
+async function spinTo(label) { const now = document.getElementById("now"), pool = FLIGHTS.map(f => `${f.from} → ${f.to}`);
+  for (let k = 0; k < 14; k++) { now.textContent = "✦ " + pool[(Math.random() * pool.length) | 0]; await sleep(55 + k * 9); } now.textContent = "✦ " + label; }
+const SURPRISES = [
+  // 1. mystery boarding pass
+  async () => { const f = pick(flownList().length ? flownList() : FLIGHTS); await spinTo(`${f.from} → ${f.to}`); fly(f.i, 1600);
+    card(`<div class="ey">MYSTERY BOARDING PASS</div><div class="bp"><div class="r"><b>${f.from}</b><span>✈</span><b>${f.to}</b></div>
+      <div class="r sm"><span>${AIRPORTS[f.from].city}</span><span>${AIRPORTS[f.to].city}</span></div>
+      <div class="lg">${badge(f.air)}</div>
+      <div class="gr"><div><small>DATE</small>${MONTHS[f.date.getMonth()]} ${f.date.getDate()}</div><div><small>FLIGHT</small>${f.no || f.air}</div><div><small>DEPARTS</small>${f.t ? f.t.split(" → ")[0] : "—"}</div><div><small>MILES</small>${fmt(f.mi)}</div></div>
+      ${f.note ? `<div class="nt">${f.note}</div>` : ""}</div>`); },
+  // 2. trivia
+  async () => { const counts = {}; FLIGHTS.forEach(f => counts[f.air] = (counts[f.air] || 0) + 1);
+    const topA = Object.entries(counts).sort((x, y) => y[1] - x[1])[0][0];
+    const rc = {}; FLIGHTS.forEach(f => { const k = [f.from, f.to].sort().join(" ⇄ "); rc[k] = (rc[k] || 0) + 1; }); const topR = Object.entries(rc).sort((x, y) => y[1] - x[1])[0];
+    const longF = FLIGHTS.reduce((x, y) => y.mi > x.mi ? y : x);
+    const mix = (ans, pool) => { const o = [...new Set(pool.filter(p => p !== ans))].sort(() => Math.random() - .5).slice(0, 2); o.splice((Math.random() * 3) | 0, 0, ans); return o; };
+    const Q = pick([
+      { q: "Which airline flew you the most this year?", a: topA, o: mix(topA, Object.keys(counts).concat(["Delta", "United", "Southwest", "Alaska", "American"])) },
+      { q: `How many times did you fly ${topR[0]}?`, a: String(topR[1]), o: mix(String(topR[1]), [topR[1] - 2, topR[1] - 1, topR[1] + 1, topR[1] + 2].filter(n => n > 0).map(String)) },
+      { q: "What was your longest flight?", a: `${longF.from} → ${longF.to}`, o: mix(`${longF.from} → ${longF.to}`, FLIGHTS.map(f => `${f.from} → ${f.to}`)) },
+      { q: "How many different airlines did you fly?", a: String(Object.keys(counts).length), o: mix(String(Object.keys(counts).length), [1, 2, 3, 4, 5, 6, 7].map(String)) },
+    ]);
+    const m = card(`<div class="ey">POP QUIZ</div><h3 style="font-size:28px;text-transform:none">${Q.q}</h3><div class="qz">${Q.o.map(o => `<button type="button" data-o="${o}">${o}</button>`).join("")}</div><div class="nt" id="qres"></div>`);
+    m.querySelectorAll(".qz button").forEach(b => b.addEventListener("click", () => {
+      const ok = b.dataset.o === Q.a; m.querySelectorAll(".qz button").forEach(x => { x.disabled = true; x.classList.toggle("right", x.dataset.o === Q.a); }); if (!ok) b.classList.add("wrong");
+      m.querySelector("#qres").textContent = ok ? "Correct! You know your skies." : `Not quite. It's ${Q.a}.`; if (ok) confettiAt(b); })); },
+  // 3. time-lapse of the season so far
+  async () => { const list = flownList(); toMap(); await sleep(350); for (const [k, f] of list.entries()) { document.getElementById("now").textContent = `Time-lapse · ${k + 1}/${list.length} · ${MONTHS[f.date.getMonth()]} ${f.date.getDate()}`; await fly(f.i, 380); }
+    document.getElementById("now").textContent = `${list.length} flights in ${((list.length * 380) / 1000).toFixed(1)} seconds`; },
+  // 4. stat card
+  async () => { const list = flownList(), mins = list.map(airMinutes).filter(x => x), total = mins.reduce((a, b) => a + b, 0);
+    let gap = 0, gapA, gapB; for (let k = 1; k < list.length; k++) { const g = (list[k].date - list[k - 1].date) / 864e5; if (g > gap) { gap = g; gapA = list[k - 1]; gapB = list[k]; } }
+    const hub = {}; list.forEach(f => { hub[f.from] = (hub[f.from] || 0) + 1; hub[f.to] = (hub[f.to] || 0) + 1; }); const top = Object.entries(hub).sort((a, b) => b[1] - a[1])[0];
+    card(`<div class="ey">BY THE NUMBERS</div><h3>Your sky stats</h3><div class="g">
+      <div><b>${Math.floor(total / 60)}h ${total % 60}m</b>in the air${mins.length < list.length ? "*" : ""}</div>
+      <div><b>${fmt(list.reduce((s, f) => s + f.mi, 0) / Math.max(1, list.length))}</b>avg miles per flight</div>
+      <div><b>${gap | 0} days</b>longest break (${MONTHS[gapA.date.getMonth()]} ${gapA.date.getDate()} → ${MONTHS[gapB.date.getMonth()]} ${gapB.date.getDate()})</div>
+      <div><b>${top[0]}</b>home base · ${top[1]} times</div></div>${mins.length < list.length ? `<div class="nt">*flights with known times only</div>` : ""}`); },
+  // 5. postcard from a random stop
+  async () => { const cols = ["#2e6b5a", "#b5462f", "#c08a2e", "#7a2731", "#2b4c8c", "#6b4a8a"], code = pick(usedAirports), city = AIRPORTS[code].city;
+    const line = AIRPORTS[code].postcard || `Greetings from ${city}`, col = cols[usedAirports.indexOf(code) % cols.length], n = FLIGHTS.filter(f => f.to === code && !f.up).length;
+    card(`<div class="pc" style="--pc:${col}"><div class="pcl">${line}</div><div class="pcc">${city.toUpperCase()}</div><div class="pcs">${code}</div><div class="nt">You landed here ${n} time${n === 1 ? "" : "s"} this year.</div></div>`, "light"); },
+  // 6. turbulence
+  async () => { const m = document.querySelector(".mapcard"); toMap(); await sleep(300); for (let k = 0; k < 3; k++) { m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); await sleep(520); } toast("Turbulence! Seatbelt sign is on. Please return to your seat."); },
+  // 7. raining planes
+  async () => { planeRain(); toast("It's raining planes ✈"); },
+  // 8. the one that started it all / the latest
+  async () => { const list = flownList(), f = Math.random() < .5 ? list[0] : list[list.length - 1]; toMap(); await sleep(300); await spinTo(f === list[0] ? "Where it all began" : "Your latest landing");
+    await fly(f.i, 1800); toast(`${MONTHS[f.date.getMonth()]} ${f.date.getDate()} · ${f.from} → ${f.to} on ${f.air}`); },
+];
+let deck = [];
+document.getElementById("surprise").addEventListener("click", e => { pop(e.currentTarget);
+  if (!flownList().length) { toast("Surprises unlock after your first flight of the year ✈"); return; }
+  if (!deck.length) deck = SURPRISES.map((_, k) => k).sort(() => Math.random() - .5);
+  SURPRISES[deck.pop()](); });
+// easter egg: tap the title 5 times
+let titleTaps = 0, titleT;
+document.querySelector("h1").addEventListener("click", e => { pop(e.currentTarget); titleTaps++; clearTimeout(titleT); titleT = setTimeout(() => titleTaps = 0, 1500); if (titleTaps >= 5) { titleTaps = 0; planeRain(); toast("You found the secret hangar ✈"); } });
+// season recap after Play the season
+function recap() {
+  const m = document.createElement("div"); m.className = "modal"; m.setAttribute("role", "dialog");
+  m.innerHTML = `<div class="box"><div style="font:500 12px var(--mono);letter-spacing:.16em;opacity:.7">SEASON ${YEAR} RECAP</div><h3>That's a wrap</h3>
+    <div class="g"><div><b>${FLIGHTS.length}</b>flights</div><div><b>${fmt(FLIGHTS.reduce((s, f) => s + f.mi, 0))}</b>miles</div><div><b>${new Set(FLIGHTS.map(f => f.air)).size}</b>airlines</div><div><b>${collected.size}/${FLIGHTS.length}</b>stamps</div></div>
+    <div style="font-size:14px;opacity:.85">${pick(FACTS)}</div><button type="button">Close</button></div>`;
+  m.addEventListener("click", ev => { if (ev.target === m || ev.target.tagName === "BUTTON") m.remove(); });
+  document.body.appendChild(m); m.querySelector("button").focus();
+}
+document.getElementById("play").addEventListener("click", () => { const btn = document.getElementById("play"); const wait = setInterval(() => { if (!btn.disabled) { clearInterval(wait); recap(); } }, 300); });
+// tap a blank spot: clear the stamps so they can be collected again
+document.addEventListener("click", e => {
+  if (e.target.closest("button, a, input, .pass, .cell, .month, .ach, .tcard, .rm, .pilot, .mapcard, h1, .toast, .modal, .seg")) return;
+  if (!collected.size) return;
+  document.querySelectorAll(".pass.got").forEach(p => p.classList.add("poof"));
+  setTimeout(() => { document.querySelectorAll(".pass").forEach(p => p.classList.remove("got", "poof", "restamp")); }, 320);
+  collected.clear();
+  try { localStorage.setItem("my-flight-stamps-" + YEAR, "[]"); } catch (err) {}
+  renderAchs(); renderScore();
+  toast("Stamps cleared · tap flights to collect them again");
+});
+
+
+document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+  filter = b.dataset.f;
+  document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  try { localStorage.setItem("flight-filter", filter); } catch (e) {}
+  renderList();
+}));
+try { const saved = localStorage.getItem("flight-filter"); if (saved) { filter = saved; document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.f === saved)); } } catch (e) {}
+renderList();
+if (!FLIGHTS.length) document.getElementById("list").innerHTML = `<p class="meta">No flights yet. New bookings from your email show up here automatically.</p>`;
+</script>
+
+</html>

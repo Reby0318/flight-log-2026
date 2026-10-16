@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My Flight Story</title>
+<link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Bebas+Neue&family=Anton&family=Inter+Tight:wght@500;700;800&family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;700&family=Big+Shoulders+Display:wght@700;900&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="../pictures/world-countries.js"></script>
+<script src="../pictures/us-states.js"></script>
+<script>window.LOGO_BASE = "../pictures/logos-official/";</script>
+<script src="../pictures/logos.js"></script>
+<script src="data.js"></script>
+<style>
+/* The Dec 20 "Americana" Instagram Story (1080×1920), drawn from anyone's flights: pinned map with one line per flight,
+   season-pass ticket, license plate, shield, airport patches, passport stamps and an itemized receipt. */
+:root { --ink: #262a33; --hand: "Caveat", cursive; --mono: "IBM Plex Mono", monospace; --typed: "Special Elite", monospace;
+  --wall: repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 6px), #5d7896; --title: #fbf6ec; --hl: #fbf6ec; --hlInk: #2f4560;
+  --tape1: rgba(251,246,236,.6); --tape2: rgba(160,210,255,.7); --pp: #e9ecef; --rc: #fff; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #5d7896; }
+.pg { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--wall); color: var(--ink); }
+h1 { position: absolute; top: 34px; left: 56px; font: 700 92px/.95 var(--hand); transform: rotate(-2deg); color: var(--title); }
+h1 small { display: block; width: max-content; max-width: 700px; margin: 0 0 10px 6px; padding: 8px 18px 6px; border-radius: 999px; background: #fff; color: #262a33; font: 500 22px/1 var(--mono); letter-spacing: .28em; text-transform: uppercase; transform: rotate(2deg); box-shadow: 0 4px 10px rgba(0,0,0,.12); white-space: nowrap; overflow: hidden; }
+h1 span { display: inline-block; margin: 6px 0 0 110px; font: 700 .78em/1 var(--hand); letter-spacing: .02em; background: var(--hl); color: var(--hlInk); padding: 6px 18px 2px; border-radius: 6px; transform: rotate(-3deg); }
+.pin { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ff8a8a, #d63a3a 60%); box-shadow: 0 4px 5px rgba(0,0,0,.3); z-index: 9; }
+.tape { position: absolute; height: 46px; background: repeating-linear-gradient(45deg, rgba(255,255,255,.38) 0 7px, transparent 7px 14px), var(--tape1); z-index: 9; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+.mapcard { position: absolute; top: 272px; left: 40px; width: 1000px; height: 700px; background: #fff; padding: 18px 18px 0; transform: rotate(-1deg); box-shadow: 0 16px 30px rgba(30,40,60,.18); }
+.mapcard svg { width: 964px; height: 486px; display: block; border-radius: 4px; }
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; padding: 16px 10px 0; }
+.legend div { display: flex; align-items: center; gap: 10px; font: 700 34px var(--hand); }
+.legend .sw { display: block; height: 5px; border-radius: 3px; margin-top: 6px; }
+
+.passport { position: absolute; top: 960px; left: 34px; width: 560px; height: 920px; transform: rotate(-3deg); border-radius: 10px; overflow: hidden; box-shadow: 0 18px 34px rgba(30,40,60,.22);
+  background: repeating-radial-gradient(circle at 50% 45%, transparent 0 14px, rgba(40,100,90,.08) 14px 16px), var(--pp); }
+.passport .hd { position: absolute; top: 26px; left: 34px; right: 34px; display: flex; justify-content: flex-end; font: 400 22px var(--typed); letter-spacing: .4em; color: #4f6f68; }
+.passport .no { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font: 400 22px var(--typed); color: #4f6f68; }
+.st { position: absolute; display: grid; place-items: center; text-align: center; font-family: var(--typed); mix-blend-mode: multiply; opacity: .88; }
+.st b { display: block; font: 900 54px/1 "Big Shoulders Display"; letter-spacing: .05em; }
+.st small { display: block; font-size: 15px; letter-spacing: .12em; }
+
+.receipt { position: absolute; top: 990px; left: 600px; width: 450px; height: 900px; background: var(--rc); transform: rotate(2.5deg); box-shadow: 0 18px 34px rgba(30,40,60,.2); padding: 36px 30px; font: 400 19px/1.45 var(--mono); color: #232323; }
+.receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -12px; height: 12px; background: linear-gradient(135deg, var(--rc) 50%, transparent 50%) 0 0/24px 24px, linear-gradient(225deg, var(--rc) 50%, transparent 50%) 0 0/24px 24px; }
+.receipt h2 { font: 700 40px/1 var(--mono); text-align: center; letter-spacing: .06em; }
+.receipt .c { text-align: center; color: #666; font-size: 16px; margin-top: 6px; }
+.receipt .hr { border-top: 2px dashed #b5b5b5; margin: 14px 0; }
+.receipt .it { display: grid; grid-template-columns: 62px 96px 1fr 54px; align-items: center; height: 34px; }
+.receipt .it span:last-child { text-align: right; }
+.receipt .more { text-align: center; color: #666; height: 34px; line-height: 34px; }
+.receipt .tot { display: flex; justify-content: space-between; font: 700 30px var(--mono); }
+.receipt .sub { display: flex; justify-content: space-between; }
+.receipt .bc { height: 64px; margin: 18px auto 8px; width: max-content; }
+.empty { position: absolute; inset: 0; display: grid; place-items: center; z-index: 20; background: rgba(47,69,96,.55); color: #fff; font: 700 64px/1.1 var(--hand); text-align: center; }
+</style>
+</head>
+<body>
+<div class="pg" id="pg">
+  <h1><small id="eye"></small>All the flights<br><span id="took"></span></h1>
+  <div class="mapcard"><svg id="map"></svg><div class="legend" id="legend"></div></div>
+  <span class="pin" style="top:262px;left:520px"></span>
+  <div class="passport" id="passport"><div class="hd"><span id="ppYear"></span></div><div class="no" id="ppNo"></div></div>
+  <div class="tape" style="top:940px;left:200px;width:170px;transform:rotate(-8deg)"></div>
+  <div class="receipt" id="receipt"></div>
+  <div class="tape" style="top:972px;left:760px;width:150px;transform:rotate(6deg);background:var(--tape2)"></div>
+</div>
+<script>
+// the visitor's own flights: from the maker (#a=...) or what they last entered
+let S = null;
+try { const h = /[#&]a=([^&]+)/.exec(location.hash); S = h ? flDecode(decodeURIComponent(h[1])) : JSON.parse(localStorage.getItem("my-flight-log") || "null"); } catch (e) {}
+const LOG = buildFlightLog(S || { year: new Date().getFullYear(), flights: [] });
+const YEAR = LOG.year, AP = LOG.airports;
+const DEFAULT_COLORS = ["#E3132C", "#0B2A7A", "#F5A800", "#1FA0C0", "#2E8B57", "#0078D2", "#7a4bb3", "#c2410c", "#0f766e", "#be185d"];
+const MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const nf = n => Math.round(n).toLocaleString("en-US"), pad = n => String(n).padStart(2, "0");
+function miles(a, b) { const r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r, h = Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2; return 2 * 3958.8 * Math.asin(Math.sqrt(h)); }
+const mins = s => { const r = /(\d+):(\d+)\s*(AM|PM)/.exec(s || ""); if (!r) return null; let h = +r[1] % 12; if (r[3] === "PM") h += 12; return h * 60 + +r[2]; };
+
+const fl = LOG.flights.slice().sort((a, b) => (a.d + (a.t || "")).localeCompare(b.d + (b.t || ""))).map((f, i) => {
+  const [y, m, d] = f.d.split("-").map(Number), [dep, arr] = (f.t || "").split("→").map(mins);
+  const land = new Date(y, m - 1, d + (dep != null && arr != null && arr < dep ? 1 : 0)); // red-eyes land the next day
+  return { ...f, i, m: m - 1, day: d, land, mi: miles(AP[f.from], AP[f.to]), key: [f.from, f.to].sort().join("-") };
+});
+const AIRS = [...new Set(fl.map(f => f.air))];
+const CODE = Object.fromEntries(AIRS.map(a => [a, (LOG.airlines[a] || {}).code || a]));
+const LINE = Object.fromEntries(AIRS.map((a, k) => [a, (LOG.airlines[a] || {}).color || DEFAULT_COLORS[k % DEFAULT_COLORS.length]]));
+// official logo when we have one, otherwise the airline's name in a white badge
+const pill = (air, h, w, extra = "") => window.LOGO_SRC && LOGO_SRC[CODE[air]] ? LOGO_PILL(CODE[air], h, w, extra)
+  : `<span style="display:inline-grid;place-items:center;width:${w}px;height:${h}px;border-radius:${Math.round(h * .3)}px;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.1);color:#1d2b4a;font:700 ${Math.round(h * .4)}px 'Inter Tight';white-space:nowrap;overflow:hidden;${extra}">${air}</span>`;
+const TOTAL = fl.reduce((s, f) => s + f.mi, 0);
+const visits = {}; fl.forEach(f => { visits[f.from] = (visits[f.from] || 0) + 1; visits[f.to] = (visits[f.to] || 0) + 1; });
+const topAirports = Object.entries(visits).sort((a, b) => b[1] - a[1]);
+const HUB = topAirports[0] ? AP[topAirports[0][0]].city.replace(/\s*\(.*\)/, "") : "";
+const counts = AIRS.map(a => [a, fl.filter(f => f.air === a).length]).sort((a, b) => b[1] - a[1]);
+
+/* ---------- title ---------- */
+// short home base so the line never runs under the license plate
+const HOME = HUB.length <= 10 ? HUB : topAirports[0] ? topAirports[0][0] : "";
+document.getElementById("eye").textContent = HOME ? `Season ${YEAR} · ${HOME} and beyond` : `Season ${YEAR}`;
+document.getElementById("took").textContent = `I took in ${YEAR}`;
+document.getElementById("ppYear").textContent = YEAR;
+document.getElementById("ppNo").textContent = `— ${fl.length} —`;
+document.title = `${YEAR} flights · Story`;
+
+/* ---------- legend: logo, count, line color (six busiest airlines) ---------- */
+document.getElementById("legend").innerHTML = counts.slice(0, 6).map(([a, n]) => `<div><span>${pill(a, 58, 232)}<span class="sw" style="background:${LINE[a]}"></span></span>×${n}</div>`).join("");
+
+/* ---------- passport stamps (first 14 flights, then the total) ---------- */
+(function () {
+  const inks = ["#6b2fa0", "#b3202a", "#1d6b3a", "#1f4fa3", "#b8641a", "#0e7c86"];
+  const items = fl.slice(0, 14).map(f => ({ f })).concat(fl.length ? [{ total: true }] : []);
+  document.getElementById("passport").insertAdjacentHTML("beforeend", items.map((it, k) => {
+    const col = k % 3, row = Math.floor(k / 3);
+    const x = 14 + col * 178 + ((k * 37) % 26) - 13, y = 78 + row * 164 + ((k * 53) % 30) - 15, rot = ((k * 47) % 30) - 15;
+    const ink = it.total ? "#1f4fa3" : inks[k % inks.length], shape = it.total ? 0 : k % 3;
+    const box = shape === 0 ? "width:168px;height:168px;border-radius:50%;border:5px double" : shape === 1 ? "width:184px;height:132px;border-radius:8px;border:5px double" : "width:190px;height:136px;border-radius:50%;border:4px solid";
+    const body = it.total ? `<small>ENTRIES</small><b>${fl.length}</b><small>${nf(TOTAL)} MI</small>`
+      : `<small>ARRIVED</small><b>${it.f.to}</b><small>${MON[it.f.land.getMonth()]} ${it.f.land.getDate()}, ${it.f.land.getFullYear()}</small><small>${it.f.air.toUpperCase().slice(0, 16)}</small>`;
+    return `<div class="st" style="left:${x}px;top:${y}px;${box} ${ink};color:${ink};transform:rotate(${rot}deg)"><div>${body}</div></div>`;
+  }).join(""));
+})();
+
+/* ---------- receipt (up to 14 lines) ---------- */
+(function () {
+  let h = 0, bars = ""; for (const ch of "flightlog" + YEAR) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (let i = 0; i < 60; i++) { h = (h * 1103515245 + 12345) >>> 0; bars += `<i style="display:inline-block;height:100%;margin-right:3px;background:#232323;width:${1 + (h >>> 28) % 4}px"></i>`; }
+  const shown = fl.length > 14 ? fl.slice(0, 13) : fl;
+  const who = ((LOG.name || "").trim().split(/\s+/)[0] || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); // first name, like a receipt
+  document.getElementById("receipt").innerHTML = `
+    <h2>FLIGHT LOG</h2><div class="c">${YEAR} · ITEMIZED${who ? " · " + who : ""}</div><div class="hr"></div>
+    ${shown.map(f => `<div class="it"><span>${pad(f.m + 1)}/${pad(f.day)}</span><span>${f.from}→${f.to}</span>${pill(f.air, 34, 156, "box-shadow:none;justify-self:end")}<span>${nf(f.mi)}</span></div>`).join("")}
+    ${fl.length > 14 ? `<div class="more">+ ${fl.length - 13} more flights</div>` : ""}
+    <div class="hr"></div><div class="tot"><span>TOTAL MI</span><span>${nf(TOTAL)}</span></div>
+    <div class="sub" style="margin-top:6px"><span>FLIGHTS</span><span>${fl.length}</span></div><div class="sub"><span>AIRLINES</span><span>${AIRS.length}</span></div><div class="sub"><span>AIRPORTS</span><span>${topAirports.length}</span></div>
+    <div class="bc">${bars}</div><div class="c" style="color:#232323">THANK YOU FOR FLYING</div>`;
+})();
+
+/* ---------- contrail across the page ---------- */
+document.getElementById("pg").insertAdjacentHTML("afterbegin", `<svg style="position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none" viewBox="0 0 1080 1920">
+  <path d="M1100 120 C 860 150, 700 260, 640 300 S 120 520, 30 980 S 520 1960, 1120 1880" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
+  <g transform="translate(1010 128) rotate(172) scale(2.2)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="#fff"/></g></svg>`);
+
+/* ---------- season-pass ticket ---------- */
+(function () {
+  let h = 0, bars = ""; for (const ch of "seasonpass" + YEAR) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (let i = 0; i < 34; i++) { h = (h * 1103515245 + 12345) >>> 0; bars += `<i style="display:block;height:${1 + (h >>> 29)}px;margin-bottom:3px;background:#1d1d1f"></i>`; }
+  const parts = (LOG.name || "").toUpperCase().trim().split(/\s+/).filter(Boolean);
+  const passenger = parts.length > 1 ? `${parts[parts.length - 1]} / ${parts.slice(0, -1).join("")}` : parts[0] || "";
+  document.getElementById("pg").insertAdjacentHTML("beforeend", `
+  <div style="position:absolute;top:196px;left:700px;width:350px;height:250px;transform:rotate(7deg);z-index:9;display:grid;grid-template-columns:1fr 70px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))">
+    <div style="background:#fbf8f1;border-radius:14px 0 0 14px;padding:18px 18px 16px;display:grid;align-content:space-between;font-family:'Inter Tight';color:#1d1d1f;border-right:3px dashed #cfc8b8">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 13px 'Inter Tight';letter-spacing:.22em">SEASON PASS</span><span style="font:700 13px 'Inter Tight';letter-spacing:.1em;color:#8a7f6a">${YEAR}</span></div>
+      <div style="font:400 64px/1 'Bebas Neue';letter-spacing:.02em">${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;font-size:11px;letter-spacing:.12em;color:#8a7f6a">
+        <span>MILES<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f;letter-spacing:.02em">${nf(TOTAL)}</b></span>
+        <span>AIRLINES<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f">${AIRS.length}</b></span>
+        <span>AIRPORTS<b style="display:block;font:400 26px 'Bebas Neue';color:#1d1d1f">${topAirports.length}</b></span></div>
+      <div style="font-size:11px;letter-spacing:.14em;color:#8a7f6a;white-space:nowrap;overflow:hidden">${passenger ? `PASSENGER <b style="color:#1d1d1f">${passenger}</b>` : "ADMIT ONE · WINDOW SEAT"}</div>
+    </div>
+    <div style="background:#fbf8f1;border-radius:0 14px 14px 0;padding:16px 14px;display:grid;align-content:center">${bars}</div>
+  </div>`);
+})();
+
+/* ---------- Americana: license plate, interstate shield, patches for the three most-visited airports ---------- */
+(function () {
+  const NAVY = "#1f3a5f", RED = "#9e2a2b", CREAM = "#f4ecd8";
+  const patch = (id, fill, ink, top, bot, icon) => `<svg viewBox="0 0 140 140" style="width:100%;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
+    <defs><path id="${id}t" d="M26 70 A44 44 0 0 1 114 70"/><path id="${id}b" d="M22 70 A48 48 0 0 0 118 70"/></defs>
+    <circle cx="70" cy="70" r="66" fill="${ink}"/><circle cx="70" cy="70" r="66" fill="none" stroke="${fill}" stroke-width="6" stroke-dasharray="1.5 2.5" opacity=".7"/>
+    <circle cx="70" cy="70" r="58" fill="${fill}"/><circle cx="70" cy="70" r="40" fill="none" stroke="${ink}" stroke-width="2" stroke-dasharray="3 3"/>
+    <text font-family="Anton" font-size="${top.length > 11 ? 14 : 18}" letter-spacing="1" fill="${ink}"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${top}</textPath></text>
+    <text font-family="Anton" font-size="13" letter-spacing="1" fill="${ink}" dy="12"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">${bot}</textPath></text>
+    <g transform="translate(70 72)">${icon(ink)}</g></svg>`;
+  const star = c => `<path d="M0 -24 L7 -7 L25 -7 L10 4 L16 22 L0 11 L-16 22 L-10 4 L-25 -7 L-7 -7 Z" fill="${c}"/>`;
+  const plane = c => `<g transform="scale(2.6)"><path d="M-9 -1.2 L4 -1.2 L9 0 L4 1.2 L-9 1.2 Z M-2 -1 L-5 -8 L-2.5 -8 L3 -1 Z M-2 1 L-5 8 L-2.5 8 L3 1 Z M-9 -1 L-10.5 -4.5 L-8.6 -4.5 L-6.5 -1 Z M-9 1 L-10.5 4.5 L-8.6 4.5 L-6.5 1 Z" fill="${c}"/></g>`;
+  const sun = c => `<circle r="11" fill="${c}"/>${Array.from({ length: 12 }, (_, k) => `<rect x="-1.5" y="-24" width="3" height="8" fill="${c}" transform="rotate(${k * 30})"/>`).join("")}<rect x="-22" y="14" width="44" height="3" fill="${c}"/>`;
+  const looks = [[NAVY, CREAM, star, -8, 944, 34], [CREAM, RED, plane, 5, 954, 168], [RED, CREAM, sun, -4, 942, 302]];
+  const patches = topAirports.slice(0, 3).map(([c, n], k) => {
+    const [fill, ink, icon, rot, top, left] = looks[k], city = AP[c].city.replace(/\s*\(.*\)/, "").toUpperCase();
+    return `<div style="position:absolute;top:${top}px;left:${left}px;width:126px;transform:rotate(${rot}deg);z-index:9">${patch("p" + k, fill, ink, city, `${c} · ${n} VISIT${n === 1 ? "" : "S"}`, icon)}</div>`;
+  }).join("");
+  const screws = `<circle cx="30" cy="22" r="5" fill="#b9b2a0"/><circle cx="250" cy="22" r="5" fill="#b9b2a0"/>`;
+  document.getElementById("pg").insertAdjacentHTML("beforeend", `
+    <div style="position:absolute;top:26px;right:34px;width:280px;transform:rotate(4deg);z-index:9;filter:drop-shadow(0 8px 10px rgba(0,0,0,.3))">
+      <svg viewBox="0 0 280 130" style="width:100%"><rect x="2" y="2" width="276" height="126" rx="14" fill="${CREAM}" stroke="${NAVY}" stroke-width="4"/>
+        <rect x="10" y="10" width="260" height="110" rx="9" fill="none" stroke="${NAVY}" stroke-width="1.5" opacity=".5"/>${screws}
+        <text x="140" y="34" text-anchor="middle" font-family="Caveat" font-weight="700" font-size="26" fill="${RED}">${HUB || "Frequent Flyer"}</text>
+        <text x="140" y="96" text-anchor="middle" font-family="Bebas Neue" font-size="68" letter-spacing="6" fill="${NAVY}">FLY·${YEAR}</text>
+        <text x="140" y="117" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="11" letter-spacing="4" fill="${NAVY}">SEASON ${YEAR} · ${fl.length} FLIGHT${fl.length === 1 ? "" : "S"}</text></svg></div>
+    <div style="position:absolute;top:648px;left:62px;width:106px;transform:rotate(-6deg);z-index:9;filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))">
+      <svg viewBox="0 0 120 130" style="width:100%"><path d="M8 14 Q60 -4 112 14 Q116 70 60 126 Q4 70 8 14 Z" fill="#fff"/><path d="M14 18 Q60 3 106 18 L105 38 H15 Z" fill="${RED}"/><path d="M15 42 H105 Q104 82 60 118 Q16 82 15 42 Z" fill="${NAVY}"/>
+        <text x="60" y="33" text-anchor="middle" font-family="Anton" font-size="13" letter-spacing="1.5" fill="#fff">FLIGHTS</text>
+        <text x="60" y="92" text-anchor="middle" font-family="Anton" font-size="${fl.length > 99 ? 34 : 46}" fill="#fff">${fl.length}</text></svg></div>
+    ${patches}`);
+})();
+
+if (!fl.length) document.getElementById("pg").insertAdjacentHTML("beforeend", `<div class="empty">Add your flights<br>to make your Story ✈</div>`);
+
+/* ---------- map: fitted to this year's airports, one line per flight in its airline's color ---------- */
+window.ready = document.fonts.ready.then(() => {
+  const W = 964, H = 486, svg = d3.select("#map").attr("viewBox", `0 0 ${W} ${H}`);
+  const codes = Object.keys(AP), ll = codes.map(c => [AP[c].lon, AP[c].lat]);
+  let lon0 = -126.5, lon1 = -94, lat0 = 31.3, lat1 = 49.2;
+  if (ll.length) {
+    lon0 = Math.min(...ll.map(p => p[0])); lon1 = Math.max(...ll.map(p => p[0])); lat0 = Math.min(...ll.map(p => p[1])); lat1 = Math.max(...ll.map(p => p[1]));
+    const padLon = Math.max(4, (lon1 - lon0) * .2), padLat = Math.max(3, (lat1 - lat0) * .22); lon0 -= padLon; lon1 += padLon; lat0 -= padLat; lat1 += padLat;
+  }
+  const wide = lon1 - lon0 > 90 || lat1 - lat0 > 55;
+  const proj = wide ? d3.geoNaturalEarth1().rotate([-(lon0 + lon1) / 2, 0]) : d3.geoConicConformal().parallels([lat0 + (lat1 - lat0) / 3, lat1 - (lat1 - lat0) / 3]).rotate([-(lon0 + lon1) / 2, 0]);
+  const box = { type: "MultiPoint", coordinates: [[lon0, lat0], [lon1, lat0], [lon1, lat1], [lon0, lat1], [(lon0 + lon1) / 2, lat1], [(lon0 + lon1) / 2, lat0]] };
+  // the season-pass ticket covers the map's top-right corner: if an airport would sit under it, squeeze the map down, then left
+  const underTicket = () => ll.some(p => { const [x, y] = proj(p); return x > 600 && y < 230; });
+  for (const ext of [[[14, 14], [W - 14, H - 14]], [[14, 210], [W - 14, H - 14]], [[14, 60], [W - 380, H - 14]]]) { proj.fitExtent(ext, box); if (!underTicket()) break; }
+  const path = d3.geoPath(proj);
+  svg.append("rect").attr("width", W).attr("height", H).attr("fill", "#cad7e4");
+  svg.append("g").selectAll("path").data(topojson.feature(WORLD, WORLD.objects.countries).features).join("path")
+    .attr("d", path).attr("fill", d => d.id === "840" ? "#f4f2ea" : "#e9e6db").attr("stroke", "#c9c4b4").attr("stroke-width", 1);
+  svg.append("path").attr("d", path(topojson.mesh(US, US.objects.states, (a, b) => a !== b))).attr("fill", "none").attr("stroke", "#d8d2c0").attr("stroke-width", 1.3);
+  const pt = c => proj([AP[c].lon, AP[c].lat]);
+  const RK = {}; fl.forEach(f => RK[f.key] = (RK[f.key] || 0) + 1);
+  Object.keys(RK).sort((x, y) => RK[y] - RK[x]).forEach((key, n) => {
+    const [a, b] = key.split("-"); if (a === b) return;
+    const rf = fl.filter(f => f.key === key), A = pt(a), B = pt(b), dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+    // mostly east–west routes bulge upward; north–south ones alternate sides so neighbours don't overlap
+    let side = Math.abs(dx) > Math.abs(dy) ? (dx / len > 0 ? -1 : 1) : (n % 2 ? 1 : -1);
+    const nx = -dy / len * side, ny = dx / len * side;
+    rf.forEach((f, i) => {
+      const kk = rf.length > 1 ? .2 * (.45 + 1.1 * i / (rf.length - 1)) : .2;
+      const d = `M${A} Q${(A[0] + B[0]) / 2 + nx * kk * len},${(A[1] + B[1]) / 2 + ny * kk * len} ${B}`;
+      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", "#fff").attr("stroke-width", 8).attr("stroke-linecap", "round");
+      svg.append("path").attr("d", d).attr("fill", "none").attr("stroke", LINE[f.air]).attr("stroke-width", 4.5).attr("stroke-linecap", "round");
+    });
+  });
+  // labels: to the right unless near the right edge; a close neighbour to the east pushes this one to the left
+  const P = codes.map(c => ({ c, p: pt(c) }));
+  P.forEach(o => {
+    const near = P.find(q => q !== o && Math.hypot(q.p[0] - o.p[0], q.p[1] - o.p[1]) < 90);
+    o.left = o.p[0] > W - 190 || (near && near.p[0] > o.p[0]);
+    o.dy = near && !o.left && near.p[1] < o.p[1] ? 30 : -14;
+  });
+  const busy = P.length > 5; // many airports: codes only, so labels don't pile up
+  P.forEach(({ c, p: [x, y], left, dy }) => {
+    svg.append("circle").attr("cx", x).attr("cy", y).attr("r", 10).attr("fill", "#fff").attr("stroke", "#262a33").attr("stroke-width", 4);
+    const ox = left ? -16 : 16, t = svg.append("text").attr("x", x + ox).attr("y", y + dy).attr("text-anchor", left ? "end" : "start").attr("fill", "#262a33").attr("paint-order", "stroke").attr("stroke", "rgba(255,255,255,.85)").attr("stroke-width", 5);
+    t.append("tspan").attr("font-family", "Caveat").attr("font-weight", 700).attr("font-size", busy ? 38 : 48).text(c);
+    if (!busy) t.append("tspan").attr("x", x + ox).attr("dy", 26).attr("font-family", "Caveat").attr("font-size", 26).text(AP[c].city.replace(/\s*\(.*\)/, ""));
+  });
+});
+
+/* ---------- in-browser PNG export: the page, its fonts and logos packed into one SVG image ---------- */
+const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const toData = b => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); });
+async function fontCSS() {
+  let out = "";
+  for (const l of document.querySelectorAll("link[rel=stylesheet]")) {
+    const css = await (await fetch(l.href)).text();
+    const blocks = css.split(/(?=\/\*[^*]*\*\/\s*@font-face)/).filter(b => /\/\*\s*latin\s*\*\//.test(b) || !/\/\*/.test(b));
+    for (let b of blocks) { for (const u of new Set([...b.matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]))) b = b.split(u).join(await toData(await (await fetch(u)).blob())); out += b.replace(/\/\*[^*]*\*\//g, ""); }
+  }
+  return out;
+}
+let _fonts = null;
+window.exportPNG = async function () {
+  await window.ready;
+  _fonts = _fonts || await fontCSS();
+  const clone = document.getElementById("pg").cloneNode(true);
+  for (const img of clone.querySelectorAll("img")) if (!img.src.startsWith("data:")) img.src = await toData(await (await fetch(img.src)).blob());
+  const css = [...document.querySelectorAll("style")].map(s => s.textContent).join("\n");
+  const html = new XMLSerializer().serializeToString(clone);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920"><foreignObject width="1080" height="1920"><div xmlns="http://www.w3.org/1999/xhtml"><style>${esc(_fonts + "\n" + css)}</style>${html}</div></foreignObject></svg>`;
+  const img = new Image(); img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  await img.decode(); await new Promise(r => setTimeout(r, 300));
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1920;
+  const ctx = c.getContext("2d"); ctx.drawImage(img, 0, 0); ctx.drawImage(img, 0, 0); // second draw: Safari paints images on the second pass
+  return c.toDataURL("image/png");
+};
+window.addEventListener("message", async e => {
+  if (!e.data || e.data.type !== "export") return;
+  try { e.source.postMessage({ type: "png", url: await window.exportPNG(), id: e.data.id }, "*"); }
+  catch (err) { e.source.postMessage({ type: "png", error: String(err), id: e.data.id }, "*"); }
+});
+</script>
+</body>
+</html>

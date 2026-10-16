@@ -52,6 +52,11 @@ body { background: var(--bg); color: var(--ink); font-family: var(--body); font-
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-inline: 20px; display: grid; gap: 24px; }
 
 header { display: grid; gap: 18px; }
+.hdrow { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+/* invite visitors to build their own log with the maker */
+.makeown { font: 600 15px var(--body); color: #1d2b4a; background: #e8a33a; border-radius: 999px; padding: 11px 18px; text-decoration: none; box-shadow: 0 3px 0 #b97c1f; transition: transform .15s, box-shadow .15s; }
+.makeown:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #b97c1f; }
+.makeown:focus-visible { outline: 2px solid var(--upcoming); outline-offset: 3px; }
 .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 h1 { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 8vw, 84px); line-height: .9; margin: 4px 0 0; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; }
 h1 span { color: var(--upcoming-text); }
@@ -256,9 +261,12 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 
 <div class="wrap">
   <header>
-    <div>
-      <div class="eyebrow">Ting-yun Wu · Flight log</div>
-      <h1>2026 <span>in the air</span></h1>
+    <div class="hdrow">
+      <div>
+        <div class="eyebrow">Ting-yun Wu · Flight log</div>
+        <h1>2026 <span>in the air</span></h1>
+      </div>
+      <a class="makeown" href="https://reby0318.github.io/flight-log-2026/make/" target="_blank" rel="noopener">✈ Make your own flight log + Story</a>
     </div>
     <div class="board" id="board"></div>
     <div class="months" id="months" aria-label="Flights by month"></div>
