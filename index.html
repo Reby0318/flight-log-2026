@@ -141,6 +141,8 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
 .pilot .stamps b { font: 800 26px var(--display); }
 .pilot .hint { font-size: 13px; opacity: .8; }
 .achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.side { display: grid; gap: 20px; min-width: 0; }
+.side .achs { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 .ach { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; transition: transform .2s; }
 .ach:hover { transform: translateY(-2px); }
 .ach .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font: 800 20px var(--display); color: var(--surface); background: var(--ink); }
@@ -253,16 +255,6 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
     <div class="months" id="months" aria-label="Flights by month"></div>
   </header>
 
-  <section class="game" aria-label="Flight game">
-    <div class="pilot" id="pilot"></div>
-    <div class="achs" id="achs"></div>
-  </section>
-
-  <section class="collection" aria-label="Collection">
-    <div><div class="colhead"><h2>Airline cards</h2><span>6 of 6 collected</span></div><div class="cards" id="cards"></div></div>
-    <div><div class="colhead"><h2>Route mastery</h2><span>★ 1 · ★★ 3 · ★★★ 5 flights</span></div><div class="routes" id="routes"></div></div>
-  </section>
-
   <main>
     <section class="mapcard" aria-label="Route map">
       <div class="playbar"><button class="playbtn" id="play" type="button">▶ Play the season</button><button class="surprise" id="surprise" type="button">✦ Surprise me</button><span class="nowplaying" id="now">Replays all 14 flights in order</span></div>
@@ -274,7 +266,13 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
       </div>
     </section>
 
-    <section class="log">
+    <div class="side">
+      <section class="badges" aria-label="Badges">
+        <div class="colhead"><h2>Badges</h2><span>Tap one · it plays on the map</span></div>
+        <div class="achs" id="achs"></div>
+      </section>
+      <div class="pilot" id="pilot"></div>
+      <section class="log">
       <div class="toolbar">
         <h2>Flights</h2>
         <div class="seg" role="group" aria-label="Filter flights">
@@ -284,8 +282,14 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
         </div>
       </div>
       <div id="list" class="log"></div>
-    </section>
+      </section>
+    </div>
   </main>
+
+  <section class="collection" aria-label="Collection">
+    <div><div class="colhead"><h2>Airline cards</h2><span>6 of 6 collected</span></div><div class="cards" id="cards"></div></div>
+    <div><div class="colhead"><h2>Route mastery</h2><span>★ 1 · ★★ 3 · ★★★ 5 flights</span></div><div class="routes" id="routes"></div></div>
+  </section>
 
   <footer>Compiled from airline and Chase Travel confirmation emails. The Jun 23 flight was rebooked: the original United SEA → SFO ticket became Alaska SEA → SJC. Distances are great-circle miles between airports.</footer>
 </div>
