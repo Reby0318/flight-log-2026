@@ -15,6 +15,14 @@
   };
   // Optical balance: share of the badge each logo may use (width, height). Wide wordmarks get less, Alaska/American more.
   window.LOGO_FIT = { DL: [.64, .6], UA: [.6, .55], WN: [.64, .6], F9: [.58, .62], AS: [.76, .84], AA: [.9, .9] };
+  // More airlines for the flight log maker: official logos from Wikimedia Commons (public domain),
+  // saved as logos-official/<code>.svg. Values are the same width/height shares as above.
+  const MORE = {
+    B6: [.52, .56], NK: [.5, .58], HA: [.62, .56], G4: [.52, .62], MX: [.6, .56], AC: [.84, .5], WS: [.8, .4], AM: [.74, .4], Y4: [.5, .84],
+    BR: [.72, .44], CI: [.76, .42], JX: [.7, .4], JL: [.8, .55], NH: [.56, .5], KE: [.76, .44], CX: [.8, .55], SQ: [.8, .55], EK: [.5, .8],
+    QR: [.8, .55], BA: [.8, .46], LH: [.74, .5], AF: [.8, .45], KL: [.5, .62], TK: [.66, .5], QF: [.7, .4],
+  };
+  Object.entries(MORE).forEach(([c, fit]) => { window.LOGO_SRC[c] = () => LOGO_BASE + c + ".svg"; window.LOGO_FIT[c] = fit; });
   window.LOGO_PILL = (code, h = 40, w = 128, extra = "") => {
     const [fw, fh] = LOGO_FIT[code] || [.8, .7];
     const ix = Math.round(w * (1 - fw) / 2), iy = Math.round(h * (1 - fh) / 2);

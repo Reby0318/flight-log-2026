@@ -81,8 +81,9 @@
       if (L[f.air]) airlines[f.air] = { code: L[f.air][0], color: L[f.air][1] };
     });
     // a trip that crosses the Pacific: keep longitudes continuous so the map doesn't wrap the long way round
-    const lons = Object.values(airports).map(a => a.lon);
-    if (lons.length && Math.max(...lons) - Math.min(...lons) > 180) Object.values(airports).forEach(a => { if (a.lon < 0) a.lon += 360; });
+    // (only when that actually makes the map narrower; a round-the-world year keeps the usual view)
+    const lons = Object.values(airports).map(a => a.lon), span = l => Math.max(...l) - Math.min(...l);
+    if (lons.length && span(lons) > 180 && span(lons.map(l => l < 0 ? l + 360 : l)) < span(lons)) Object.values(airports).forEach(a => { if (a.lon < 0) a.lon += 360; });
     return {
       year: +S.year || new Date().getFullYear(), name: (S.name || "").trim(), airports, airlines,
       footer: "Made with the flight log maker. Distances are great-circle miles between airports.",
