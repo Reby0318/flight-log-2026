@@ -123,15 +123,16 @@ input[type=date], input[type=time] { min-height: 46px; }
       <div class="ai">
         <b class="ai-title">Don't remember them all? Let your AI find them.</b>
         <div class="ai-step"><span class="k">1</span><div>
-          <b>Copy the prompt and open your AI assistant</b>
-          <div class="row" style="margin-top:6px"><button class="btn ghost small" id="copyPrompt" type="button">Copy the prompt</button>
-            <a class="link" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude ↗</a><a class="link" href="https://chatgpt.com/" target="_blank" rel="noopener">Open ChatGPT ↗</a></div>
+          <b>Open your AI assistant with our request already typed in</b>
+          <div class="row" style="margin-top:6px"><a class="btn small" id="askClaude" href="https://claude.ai/new" target="_blank" rel="noopener" style="text-decoration:none">Ask Claude ↗</a>
+            <a class="btn small" id="askGPT" href="https://chatgpt.com/" target="_blank" rel="noopener" style="text-decoration:none">Ask ChatGPT ↗</a>
+            <button class="link" id="copyPrompt" type="button">or copy the request</button></div>
         </div></div>
         <div class="ai-step"><span class="k">2</span><div>
-          <b>Paste the prompt there, using one of these two ways:</b>
+          <b>Let it find your flights, one of two ways:</b>
           <div class="ai-ways">
-            <div><b>From your Gmail</b>If your AI is connected to your Gmail, just send the prompt. It searches your booking emails for you.</div>
-            <div><b>From your files</b>No Gmail connection? Attach booking confirmations (PDFs) or screenshots of e-tickets and itineraries, then send the prompt with them.</div>
+            <div><b>From your Gmail</b>If your AI is connected to your Gmail, just send the message. It searches your booking emails for you.</div>
+            <div><b>From your files</b>No Gmail connection? Attach booking confirmations (PDFs) or screenshots of e-tickets and itineraries, then send the message with them.</div>
           </div>
         </div></div>
         <div class="ai-step"><span class="k">3</span><div>
@@ -294,13 +295,17 @@ $("clear").onclick = () => { if (S.flights.length && !confirm("Remove all your f
 /* ---------- import from your own AI ---------- */
 const AI_PROMPT = () => `Please find every flight I took or booked in ${S.year}.
 Search my email for airline and travel booking confirmations, check-in and itinerary emails (if you can access my Gmail), and read any booking PDFs or screenshots I upload.
+If you can't access my email, ask me to upload my booking confirmations (PDFs) or screenshots instead.
 Include only flights where I am a passenger. Use the final itinerary when a flight was changed, and leave out cancelled flights.
 Reply with one line per flight and nothing else, in date order, in exactly this format:
 YYYY-MM-DD | FROM | TO | Airline | Flight number | Departure HH:MM | Arrival HH:MM
 FROM and TO are 3-letter airport codes. Times are local 24-hour times; leave a time empty if you don't know it.
 Do not include confirmation codes, ticket numbers, prices, payment details, loyalty numbers or anyone else's name.`;
+// the request travels in the link, so the assistant opens with it filled in
+const setAskLinks = () => { const q = encodeURIComponent(AI_PROMPT()); $("askClaude").href = `https://claude.ai/new?q=${q}`; $("askGPT").href = `https://chatgpt.com/?q=${q}`; };
+setAskLinks(); $("year").addEventListener("input", setAskLinks);
 $("copyPrompt").onclick = async () => {
-  try { await navigator.clipboard.writeText(AI_PROMPT()); $("copyPrompt").textContent = "Copied ✓"; setTimeout(() => $("copyPrompt").textContent = "Copy the prompt", 1800); }
+  try { await navigator.clipboard.writeText(AI_PROMPT()); $("copyPrompt").textContent = "Copied ✓"; setTimeout(() => $("copyPrompt").textContent = "or copy the request", 1800); }
   catch (e) { prompt("Copy this prompt:", AI_PROMPT()); }
 };
 // airline by name or code ("UA", "United Airlines" → United)
