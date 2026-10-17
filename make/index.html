@@ -71,7 +71,16 @@ input[type=date], input[type=time] { min-height: 46px; }
 .note { font-size: 13px; color: var(--muted); margin: 0; }
 /* import from your own AI */
 .ai { border: 1.5px dashed var(--amber); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; display: grid; gap: 6px; }
-.ai ol { margin: 4px 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.ai { gap: 12px; }
+.ai-title { font-size: 16px; }
+.ai-step { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 10px; font-size: 14px; }
+.ai-step .k { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--amber); color: #1d2b4a; font: 600 12px var(--mono); }
+.ai-step .row .link { margin-left: 4px; }
+.ai-ways { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.ai-ways > div { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); background: var(--surface); }
+.ai-ways b { display: block; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+.ai code { font: 12px var(--mono); background: var(--bg); padding: 1px 5px; border-radius: 5px; white-space: nowrap; }
+@media (max-width: 560px) { .ai-ways { grid-template-columns: 1fr; } .ai code { white-space: normal; word-break: break-word; } }
 .ai textarea { font: 13px/1.5 var(--mono); color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; resize: vertical; outline: none; }
 .ai textarea:focus { border-color: var(--amber); }
 .btn.small { padding: 6px 12px; font-size: 13px; }
@@ -107,15 +116,26 @@ input[type=date], input[type=time] { min-height: 46px; }
     <section class="step">
       <h2><span class="n">3</span>Add your flights</h2>
       <div class="ai">
-        <b>Don't remember them all? Let your own AI find them.</b>
-        <ol>
-          <li><button class="btn ghost small" id="copyPrompt" type="button">Copy the prompt</button> and paste it into Claude, ChatGPT or another AI assistant.</li>
-          <li>Let it search your Gmail (if it's connected), or upload your booking PDFs or screenshots there.</li>
-          <li>Paste its reply here:</li>
-        </ol>
-        <textarea id="aiPaste" rows="4" placeholder="2026-06-12 | SFO | SEA | United | UA 5579 | 22:59 | 01:29"></textarea>
-        <div class="row" style="margin-top:8px"><button class="btn amber" id="aiImport" type="button">Import flights</button></div>
-        <div class="msg" id="aiMsg" role="status"></div>
+        <b class="ai-title">Don't remember them all? Let your AI find them.</b>
+        <div class="ai-step"><span class="k">1</span><div>
+          <b>Copy the prompt and open your AI assistant</b>
+          <div class="row" style="margin-top:6px"><button class="btn ghost small" id="copyPrompt" type="button">Copy the prompt</button>
+            <a class="link" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude ↗</a><a class="link" href="https://chatgpt.com/" target="_blank" rel="noopener">Open ChatGPT ↗</a></div>
+        </div></div>
+        <div class="ai-step"><span class="k">2</span><div>
+          <b>Paste the prompt there, using one of these two ways:</b>
+          <div class="ai-ways">
+            <div><b>From your Gmail</b>If your AI is connected to your Gmail, just send the prompt. It searches your booking emails for you.</div>
+            <div><b>From your files</b>No Gmail connection? Attach booking confirmations (PDFs) or screenshots of e-tickets and itineraries, then send the prompt with them.</div>
+          </div>
+        </div></div>
+        <div class="ai-step"><span class="k">3</span><div>
+          <b>Copy the AI's answer and paste it below</b>
+          <p class="note" style="margin:2px 0 6px">It replies with one line per flight, like: <code>2026-06-12 | SFO | SEA | United | UA 5579 | 22:59 | 01:29</code></p>
+          <textarea id="aiPaste" rows="4" placeholder="Paste the AI's answer here"></textarea>
+          <div class="row" style="margin-top:8px"><button class="btn amber" id="aiImport" type="button">Import flights</button></div>
+          <div class="msg" id="aiMsg" role="status"></div>
+        </div></div>
         <p class="note">Your emails and files stay with your AI. This page only reads the flight lines you paste, and nothing is uploaded.</p>
       </div>
       <p class="or">Or add flights one at a time:</p>
