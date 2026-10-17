@@ -63,10 +63,13 @@ input[type=date], input[type=time] { min-height: 46px; }
 .sty:focus-visible { outline: none; } .sty:focus-visible .sw { box-shadow: 0 0 0 3px var(--ink); }
 .preview { position: sticky; top: 16px; display: grid; gap: 12px; }
 .tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; justify-self: start; }
+@media (max-width: 420px) { .tab { padding: 8px 10px; font-size: 13px; } }
 .tab { font: 600 14px var(--body); border: 0; background: none; color: var(--muted); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
 .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); }
 .stage { position: relative; width: 100%; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #5d7896; box-shadow: 0 12px 30px rgba(20,30,50,.18); }
 .stage iframe { position: absolute; top: 0; left: 0; width: 1080px; height: 1920px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.animstage { position: relative; width: 100%; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #0a1330; box-shadow: 0 12px 30px rgba(20,30,50,.18); }
+.animstage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .logframe { width: 100%; height: min(78vh, 780px); border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .note { font-size: 13px; color: var(--muted); margin: 0; }
 /* import from your own AI */
@@ -84,6 +87,8 @@ input[type=date], input[type=time] { min-height: 46px; }
 .ai textarea { font: 13px/1.5 var(--mono); color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; resize: vertical; outline: none; }
 .ai textarea:focus { border-color: var(--amber); }
 .btn.small { padding: 6px 12px; font-size: 13px; }
+.sharegroup { display: grid; gap: 6px; margin-top: 14px; }
+.sharegroup > b { font-size: 15px; }
 .or { margin: 4px 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); }
 .mobilebar { display: none; }
 @media (max-width: 900px) {
@@ -165,12 +170,21 @@ input[type=date], input[type=time] { min-height: 46px; }
       <h2><span class="n">5</span>Get your Story and your log</h2>
       <div class="row" style="margin-top:0">
         <button class="btn" id="download" type="button">Download my Story ⬇</button>
+        <button class="btn ghost" id="watch" type="button">▶ Watch my animated story</button>
         <a class="btn ghost" id="open" href="view.html" style="text-decoration:none">Open my flight log →</a>
         <button class="btn ghost" id="share" type="button">Copy link to my log</button>
       </div>
       <div class="msg ok" id="status" role="status"></div>
-      <p class="or" style="margin:10px 0 8px">Share with friends</p>
-      <div class="share" id="shareBar"></div>
+      <div class="sharegroup">
+        <b>Post your Story picture</b>
+        <span class="note">On your phone, each button opens your share menu with the picture, so you can add it to your Instagram, Facebook or Threads Story or post, or send it on LINE.</span>
+        <div class="share" id="pictureBar"></div>
+      </div>
+      <div class="sharegroup">
+        <b>Invite friends to make their own</b>
+        <span class="note">Shares this maker page, not your flights.</span>
+        <div class="share" id="inviteBar"></div>
+      </div>
       <p class="note">Your flights are saved only in this browser. The copied link carries them inside the link itself, so anyone with it can see them; it never includes booking codes or prices.</p>
     </section>
   </main>
@@ -178,9 +192,11 @@ input[type=date], input[type=time] { min-height: 46px; }
   <aside class="preview" id="preview" aria-label="Preview">
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tStory" aria-selected="true">Story picture</button>
+      <button class="tab" role="tab" id="tAnim" aria-selected="false">Animated story</button>
       <button class="tab" role="tab" id="tLog" aria-selected="false">Interactive log</button>
     </div>
     <div class="stage" id="stage"><iframe id="pv" title="Story preview" tabindex="-1"></iframe></div>
+    <div class="animstage" id="animStage" hidden><iframe id="av" title="Animated story preview"></iframe></div>
     <iframe class="logframe" id="lv" title="Interactive flight log preview" hidden></iframe>
   </aside>
 </div>
@@ -343,48 +359,44 @@ const shareInfo = A => {
     subject: `${first ? first + "'s" : "My"} ${A.year} flight log`,
     text: `${first ? first + "'s" : "My"} ${A.year} in the air ✈ ${n} flight${n === 1 ? "" : "s"}. Make your own flight log too!` };
 };
-flShareBar($("shareBar"), () => shareInfo(S), () => {
-  if (!S.flights.length) { $("status").textContent = "Add at least one flight first."; return; }
-  $("download").click(); $("status").textContent = "Saving your Story picture… then post it as an Instagram Story.";
-});
+const storyBlob = () => { if (!S.flights.length) return Promise.reject(new Error("no flights")); tab(false); return flPngFromFrame($("pv")); };
+flPictureBar($("pictureBar"), { getBlob: storyBlob, fileName: () => `my-${S.year}-flights-story.png`, info: () => shareInfo(S),
+  say: t => { $("status").textContent = S.flights.length ? t : "Add at least one flight first."; } });
+flInviteBar($("inviteBar"), { say: t => $("status").textContent = t });
 /* ---------- live preview ---------- */
 let timer = 0, lastLog = "";
 const link = page => `${page}?embed=1&r=${Date.now()}#a=${encodeURIComponent(flEncode(S))}`;
 function update() {
   try { localStorage.setItem("my-flight-log", JSON.stringify(S)); } catch (e) {}
   $("open").href = `view.html?a=${flEncode(S)}`;
-  clearTimeout(timer); timer = setTimeout(() => { $("pv").src = link("story.html"); if (!$("lv").hidden) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); } }, 350);
+  clearTimeout(timer); timer = setTimeout(() => { $("pv").src = link("story.html"); if (!$("lv").hidden) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); } if (!$("animStage").hidden) { $("av").src = link("anim.html"); lastAnim = JSON.stringify(S); } }, 350);
 }
 function fit() { const w = $("stage").clientWidth; $("pv").style.transform = `scale(${w / 1080})`; }
 new ResizeObserver(fit).observe($("stage"));
-function tab(log) {
-  $("tStory").setAttribute("aria-selected", !log); $("tLog").setAttribute("aria-selected", log);
-  $("stage").hidden = log; $("lv").hidden = !log;
-  if (log && lastLog !== JSON.stringify(S)) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); }
+// preview: "story" (picture), "anim" (animated story) or "log" (interactive log); true/false still mean log/picture
+let lastAnim = "";
+function tab(v) {
+  const view = v === true ? "log" : v === false ? "story" : v;
+  $("tStory").setAttribute("aria-selected", view === "story"); $("tAnim").setAttribute("aria-selected", view === "anim"); $("tLog").setAttribute("aria-selected", view === "log");
+  $("stage").hidden = view !== "story"; $("animStage").hidden = view !== "anim"; $("lv").hidden = view !== "log";
+  if (view === "log" && lastLog !== JSON.stringify(S)) { $("lv").src = link("view.html"); lastLog = JSON.stringify(S); }
+  if (view === "anim" && lastAnim !== JSON.stringify(S)) { $("av").src = link("anim.html"); lastAnim = JSON.stringify(S); }
 }
-$("tStory").onclick = () => tab(false); $("tLog").onclick = () => tab(true);
+$("tStory").onclick = () => tab("story"); $("tAnim").onclick = () => tab("anim"); $("tLog").onclick = () => tab("log");
+$("watch").onclick = () => { if (!S.flights.length) { $("status").textContent = "Add at least one flight first."; return; } tab("anim"); $("preview").scrollIntoView({ behavior: "smooth", block: "start" }); };
 $("open").addEventListener("click", () => { try { sessionStorage.setItem("from-maker", "1"); } catch (e) {} });
 $("toPreview").onclick = () => $("preview").scrollIntoView({ behavior: "smooth", block: "start" });
 
 /* ---------- download the Story picture ---------- */
-let reqId = 0;
-$("download").onclick = () => {
+$("download").onclick = async () => {
   if (!S.flights.length) { $("status").textContent = "Add at least one flight first."; return; }
-  const btn = $("download"), id = ++reqId; btn.disabled = true; btn.textContent = "Creating your PNG…"; $("status").textContent = "";
-  const done = msg => { btn.disabled = false; btn.textContent = "Download my Story ⬇"; $("status").textContent = msg || ""; window.removeEventListener("message", onMsg); };
-  const onMsg = async e => {
-    if (!e.data || e.data.type !== "png" || e.data.id !== id) return;
-    if (e.data.error) { done("Sorry, the picture couldn't be created in this browser. Try Chrome or Safari."); return; }
-    const blob = await (await fetch(e.data.url)).blob(), file = new File([blob], `my-${S.year}-flights-story.png`, { type: "image/png" });
-    if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
-      try { await navigator.share({ files: [file], title: `My ${S.year} flights` }); done("Saved! Share it to your Instagram Story."); return; } catch (err) {}
-    }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
-    done("Downloaded ✓ 1080 × 1920 PNG, ready for your Instagram Story");
-  };
-  window.addEventListener("message", onMsg);
-  tab(false);
-  $("pv").contentWindow.postMessage({ type: "export", id }, "*");
+  const btn = $("download"); btn.disabled = true; btn.textContent = "Creating your PNG…"; $("status").textContent = "";
+  try {
+    const blob = await storyBlob(), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `my-${S.year}-flights-story.png`; document.body.appendChild(a); a.click(); a.remove();
+    $("status").textContent = "Downloaded ✓ 1080 × 1920 PNG, ready for your Instagram Story";
+  } catch (e) { $("status").textContent = "Sorry, the picture couldn't be created in this browser. Try Chrome or Safari."; }
+  btn.disabled = false; btn.textContent = "Download my Story ⬇";
 };
 
 /* ---------- share ---------- */

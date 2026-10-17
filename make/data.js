@@ -106,32 +106,71 @@
     return { year, name, style: style || "americana", flights: fl.map(([d, from, to, air, no, dep, arr]) => ({ d, from, to, air, no, dep, arr })) };
   };
 
-  // Share buttons: Instagram (the picture, via the page's own download/share), Facebook, Threads, LINE and Email (a link to the log)
-  window.flShareBar = (el, info, onInstagram) => {
-    const go = kind => {
-      const { url, text, subject } = info(), u = encodeURIComponent(url), t = encodeURIComponent(text);
-      const href = {
-        facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
-        threads: `https://www.threads.net/intent/post?text=${encodeURIComponent(text + " " + url)}`,
-        line: `https://social-plugins.line.me/lineit/share?url=${u}&text=${t}`,
-        email: `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + "\n\n" + url)}`,
-      }[kind];
-      if (kind === "email") location.href = href; else window.open(href, "_blank", "noopener,width=640,height=640");
+  // ---------- sharing ----------
+  // The Story picture: ask the picture page (in an iframe) to draw itself into a PNG.
+  let pngReq = 0;
+  window.flPngFromFrame = frame => new Promise((resolve, reject) => {
+    const id = "png" + (++pngReq);
+    const onMsg = async e => {
+      if (!e.data || e.data.type !== "png" || e.data.id !== id) return;
+      window.removeEventListener("message", onMsg);
+      if (e.data.error) reject(new Error(e.data.error)); else resolve(await (await fetch(e.data.url)).blob());
     };
-    el.innerHTML = [["instagram", "Instagram"], ["facebook", "Facebook"], ["threads", "Threads"], ["line", "LINE"], ["email", "Email"]]
-      .map(([k, n]) => `<button type="button" class="sh sh-${k}" data-sh="${k}">${n}</button>`).join("")
-      + (navigator.share ? `<button type="button" class="sh sh-more" data-sh="more">More…</button>` : "");
+    window.addEventListener("message", onMsg);
+    frame.contentWindow.postMessage({ type: "export", id }, "*");
+  });
+  // Phones and tablets can hand a picture straight to Instagram, Facebook, Threads or LINE through the share menu.
+  const canShareFile = file => !!(navigator.canShare && navigator.canShare({ files: [file] }))
+    && (/iPhone|iPad|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)));
+  const saveFile = file => { const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); };
+  const popup = href => window.open(href, "_blank", "noopener,width=640,height=680");
+  const linkTo = (kind, url, text) => ({
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+    threads: `https://www.threads.net/intent/post?text=${encodeURIComponent(text + " " + url)}`,
+    line: `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+  })[kind];
+  const NAMES = { instagram: "Instagram", facebook: "Facebook", threads: "Threads", line: "LINE", email: "Email" };
+  const buttons = list => list.map(([k, n]) => `<button type="button" class="sh sh-${k}" data-sh="${k}">${n}</button>`).join("");
+
+  // 1) Post your Story picture: on a phone, the share menu with the picture; on a computer, save it and open the app's post window.
+  window.flPictureBar = (el, { getBlob, fileName, info, say }) => {
+    el.innerHTML = buttons([["instagram", "Instagram"], ["facebook", "Facebook"], ["threads", "Threads"], ["line", "LINE"], ["save", "Save picture ⬇"]]);
+    el.addEventListener("click", async e => {
+      const b = e.target.closest("[data-sh]"); if (!b || b.disabled) return;
+      const k = b.dataset.sh, label = b.textContent, { url, text } = info();
+      b.disabled = true; b.textContent = "Preparing…"; say("");
+      try {
+        const file = new File([await getBlob()], fileName(), { type: "image/png" });
+        if (k !== "save" && canShareFile(file)) {
+          try { await navigator.share({ files: [file], text: `${text} ${url}` }); say(`Pick ${NAMES[k]} in the menu, then choose Story or Post.`); }
+          catch (err) { if (err.name !== "AbortError") say("Sharing was blocked; try Save picture instead."); }
+          return;
+        }
+        saveFile(file);
+        if (k === "save") say("Saved ✓ 1080 × 1920 PNG, the size of an Instagram or Facebook Story.");
+        else if (k === "instagram") say("Picture saved ✓ Instagram only takes new posts from its app: send the picture to your phone, then add it to your Story. Or open this page on your phone to share it directly.");
+        else { popup(linkTo(k, url, text)); say(`Picture saved ✓ In the ${NAMES[k]} window, attach the saved picture to your post.`); }
+      } catch (err) { say("Sorry, the picture couldn't be created in this browser. Try Chrome or Safari."); }
+      finally { b.disabled = false; b.textContent = label; }
+    });
+  };
+
+  // 2) Invite friends to make their own flight log (shares the maker, not your flights).
+  window.flInviteBar = (el, { say }) => {
+    const url = new URL("./", location.href.split("?")[0].split("#")[0]).href, text = "Make your own flight log and Instagram Story from this year's flights ✈";
+    el.innerHTML = buttons([["facebook", "Facebook"], ["threads", "Threads"], ["line", "LINE"], ["email", "Email"], ["copy", "Copy link"]]) + (navigator.share ? buttons([["more", "More…"]]) : "");
     el.addEventListener("click", async e => {
       const b = e.target.closest("[data-sh]"); if (!b) return;
       const k = b.dataset.sh;
-      if (k === "instagram") onInstagram();
-      else if (k === "more") { const { url, text, subject } = info(); try { await navigator.share({ title: subject, text, url }); } catch (err) {} }
-      else go(k);
+      if (k === "email") location.href = `mailto:?subject=${encodeURIComponent("Make your own flight log")}&body=${encodeURIComponent(text + "\n\n" + url)}`;
+      else if (k === "copy") { try { await navigator.clipboard.writeText(url); say("Link copied ✓ Send it to a friend."); } catch (err) { prompt("Copy this link:", url); } }
+      else if (k === "more") { try { await navigator.share({ title: "Make your own flight log", text, url }); } catch (err) {} }
+      else popup(linkTo(k, url, text));
     });
   };
   window.FL_SHARE_CSS = `.share{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .share .sh{font:600 13px var(--body,system-ui);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;color:#fff}
 .sh-instagram{background:linear-gradient(45deg,#f9a03f,#e1306c 45%,#833ab4)}.sh-facebook{background:#1877f2}.sh-threads{background:#101010}
-.sh-line{background:#06c755}.sh-email{background:#5d6b82}.sh-more{background:none;color:inherit!important;box-shadow:inset 0 0 0 1.5px currentColor}
+.sh-line{background:#06c755}.sh-email{background:#5d6b82}.sh-save{background:#1d2b4a}.sh-copy{background:#e8a33a;color:#1d2b4a!important}.share .sh:disabled{opacity:.6;cursor:default}.sh-more{background:none;color:inherit!important;box-shadow:inset 0 0 0 1.5px currentColor}
 .share .sh:focus-visible{outline:2px solid #e8a33a;outline-offset:2px}`;
 })();

@@ -108,6 +108,7 @@ main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); g
 .sharebox { display: grid; justify-items: center; gap: 8px; margin-top: 14px; }
 .sharebox > span { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .sharebox .share { justify-content: center; }
+.sharemsg { text-align: center; font-size: 13px; color: var(--muted); margin: 8px 0 0; min-height: 18px; }
 @media (max-width: 860px) {
   main > .mapcol, main > .side { display: contents; }
   .mapcard { order: 1; } .badges { order: 2; } .storycard { order: 3; position: static; } .pilot { order: 4; } .side > .log { order: 5; }
@@ -311,7 +312,9 @@ footer { font-size: 12px; color: var(--muted); max-width: 70ch; }
       <div class="storybox" id="storyBox"><iframe id="storyPicFrame" title="Your Instagram Story picture" tabindex="-1"></iframe><iframe id="storyAnim" title="Your animated story" hidden></iframe></div>
       <div class="storyfoot" id="picFoot"><button type="button" id="dlStory">Download picture ⬇</button><span id="dlMsg" role="status"></span></div>
       <div class="storyfoot" id="animFoot" hidden>Tap to advance · hold to pause</div>
-      <div class="sharebox"><span>Share with friends</span><div class="share" id="shareBar"></div></div>
+      <div class="sharebox"><span>Post your Story picture</span><div class="share" id="pictureBar"></div></div>
+      <div class="sharebox"><span>Invite friends to make their own</span><div class="share" id="inviteBar"></div></div>
+      <p class="sharemsg" id="shareMsg" role="status"></p>
     </section>
     </div>
 
@@ -901,10 +904,10 @@ const shareInfo = A => {
     subject: `${first ? first + "'s" : "My"} ${A.year} flight log`,
     text: `${first ? first + "'s" : "My"} ${A.year} in the air ✈ ${n} flight${n === 1 ? "" : "s"}. Make your own flight log too!` };
 };
-flShareBar(document.getElementById("shareBar"), () => shareInfo(window.MAKER_ANSWERS || {}), () => {
-  document.getElementById("dlStory").click();
-  document.getElementById("dlMsg").textContent = "Saving… then post it as an Instagram Story";
-});
+flPictureBar(document.getElementById("pictureBar"), { getBlob: () => flPngFromFrame(document.getElementById("storyPicFrame")),
+  fileName: () => `my-${(window.MAKER_ANSWERS || {}).year || ""}-flights-story.png`, info: () => shareInfo(window.MAKER_ANSWERS || {}),
+  say: t => document.getElementById("shareMsg").textContent = t });
+flInviteBar(document.getElementById("inviteBar"), { say: t => document.getElementById("shareMsg").textContent = t });
 </script>
 <script>
 /* ---------- your story: the picture (in your chosen style) or the animated version ---------- */
