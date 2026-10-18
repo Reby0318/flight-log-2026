@@ -1,5 +1,8 @@
 # 2026 in the Air
 
+### ▶ See it live: **[reby0318.github.io/flight-log-2026](https://reby0318.github.io/flight-log-2026/)**
+### ✈ Make your own: **[reby0318.github.io/flight-log-2026/make](https://reby0318.github.io/flight-log-2026/make/)**
+
 **Live pages:** [2026 flight log + story](https://reby0318.github.io/flight-log-2026/) · [Make your own flight log + Story](https://reby0318.github.io/flight-log-2026/make/) · [2026 story](https://reby0318.github.io/flight-log-2026/story.html) · [2027 flight log](https://reby0318.github.io/flight-log-2026/2027/) · [Same log on claude.ai](https://claude.ai/artifact/497wzrDRcKR2U392kgTHh4)
 **Live status:** the web pages (`index.html`, `story.html`) mark each flight "flown" only after its landing time passes, and refresh themselves when the next flight lands. The Story pictures are dated Dec 20, 2026 (after the last flight).
 
