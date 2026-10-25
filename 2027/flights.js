@@ -23,5 +23,6 @@ window.FLIGHT_LOG = {
     American: { code: "AA", color: "#0078D2" },
   },
   flights: [
+    { d: "2027-01-04", from: "SEA", to: "SFO", air: "Delta", no: "DL 1412", t: "9:45 AM → 12:05 PM" },
   ],
 };
